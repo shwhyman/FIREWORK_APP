@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import wx, yaml
+from passlib.hash import sha256_crypt
 
 #Open the YAML file
 
@@ -8,6 +9,7 @@ with open("config.yml", 'r') as ymlfile:
     cfg = yaml.load(ymlfile)
 
 the_text = cfg['text']
+encrypted_password = cfg['password']
 
 
 
@@ -49,7 +51,7 @@ class Frame(wx.Frame):
 	panel = wx.Panel(self)
 	box = wx.BoxSizer(wx.VERTICAL)
 
-	edit_text = wx.TextCtrl(panel, -1, the_text, size=(300,-1), pos=(10,10))
+	edit_text = wx.TextCtrl(panel, -1, the_text, size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
 	box.Add(edit_text, 0, wx.ALL)
 
 
@@ -97,8 +99,40 @@ class Frame(wx.Frame):
 class PasswordSettings(wx.Frame):
     
     def __init__(self):
-        wx.Frame.__init__(self, None, title="Password Settings")
+        wx.Frame.__init__(self, None, title="Password Settings", pos=(250,250))
 	self.Bind(wx.EVT_CLOSE, self.OnClose)	
+
+	panel = wx.Panel(self)
+	box = wx.BoxSizer(wx.VERTICAL)
+
+	prompt_text = wx.StaticText(panel, -1, 'Please enter your password:')
+	box.Add(prompt_text, 0, wx.ALL)
+
+	edit_text = wx.TextCtrl(panel, -1, '', size=(300,-1), pos=(10,10), style = wx.TE_PASSWORD)
+	box.Add(edit_text, 0, wx.ALL)
+
+	enter_button = wx.Button(panel, -1, 'Go')
+
+	enter_button.Bind(wx.EVT_BUTTON, lambda evt: self.OnEnterButton(evt, edit_text.GetValue(), result_text))
+
+	box.Add(enter_button, 0, wx.ALL)
+
+	result_text = wx.TextCtrl(panel, -1, '', style = wx.TE_READONLY, size=(200,-1))
+	box.Add(result_text, 0, wx.ALL)
+
+	panel.SetSizer(box)
+	panel.Layout()
+
+    def OnEnterButton(self, evt, password, result_text):
+	
+	hash = encrypted_password
+	outcome = sha256_crypt.verify(password, encrypted_password)
+
+	if outcome == True:
+	    result_text.SetValue('Correct password!')
+	else:
+	    result_text.SetValue('Incorrect password!')
+
 
     def OnClose(self, evt):
 	self.MakeModal(False)
