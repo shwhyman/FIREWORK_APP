@@ -19,15 +19,30 @@ class Frame(wx.Frame):
 	
 
 	menuBar = wx.MenuBar()
-	menu = wx.Menu()
 
-	m_exit = menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Exit")
+        #File menu
+
+	file_menu = wx.Menu()
+
+	m_exit = file_menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Exit")
 	self.Bind(wx.EVT_MENU, lambda evt: self.OnClose(evt, edit_text), m_exit)
 
-	m_save = menu.Append(wx.ID_SAVE,"S&ave\tAlt-S", "Save")
+	m_save = file_menu.Append(wx.ID_SAVE,"S&ave\tAlt-S", "Save")
 	self.Bind(wx.EVT_MENU, lambda evt: self.OnSave(evt, edit_text), m_save)
 
-	menuBar.Append(menu, "File")
+	menuBar.Append(file_menu, "File")
+
+
+	#Settings menu
+
+        settings_menu = wx.Menu()
+
+	m_password_settings = settings_menu.Append(0, "P&assword settings")
+	self.Bind(wx.EVT_MENU, self.OnPasswordSettings, m_password_settings)
+	
+
+	menuBar.Append(settings_menu, "Settings")
+
 	self.SetMenuBar(menuBar)
 
 
@@ -42,6 +57,11 @@ class Frame(wx.Frame):
 
 	panel.SetSizer(box)
 	panel.Layout()
+
+    def OnPasswordSettings(self, event):
+	password_frame = PasswordSettings()
+	password_frame.Show(True)
+	password_frame.MakeModal(True)
 
 
     def OnSave(self, event, text):
@@ -73,6 +93,18 @@ class Frame(wx.Frame):
             if result == wx.ID_YES:
                 self.Destroy()   
 	
+
+class PasswordSettings(wx.Frame):
+    
+    def __init__(self):
+        wx.Frame.__init__(self, None, title="Password Settings")
+	self.Bind(wx.EVT_CLOSE, self.OnClose)	
+
+    def OnClose(self, evt):
+	self.MakeModal(False)
+	evt.Skip()
+	
+
 
 app = wx.App(redirect=True)
 top = Frame("SHIT Remote Firing System")
