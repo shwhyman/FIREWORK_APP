@@ -39,7 +39,7 @@ class Frame(wx.Frame):
 
         settings_menu = wx.Menu()
 
-	m_password_settings = settings_menu.Append(0, "P&assword settings")
+	m_password_settings = settings_menu.Append(0, "Change Password")
 	self.Bind(wx.EVT_MENU, self.OnPasswordSettings, m_password_settings)
 	
 
@@ -105,40 +105,87 @@ class PasswordSettings(wx.Frame):
 	panel = wx.Panel(self)
 	box = wx.BoxSizer(wx.VERTICAL)
 
-	prompt_text = wx.StaticText(panel, -1, 'Please enter your password:')
+	prompt_text = wx.StaticText(panel, -1, 'Please enter your current password:')
 	box.Add(prompt_text, 0, wx.ALL)
 
-	edit_text = wx.TextCtrl(panel, -1, '', size=(300,-1), pos=(10,10), style = wx.TE_PASSWORD)
-	box.Add(edit_text, 0, wx.ALL)
+	current_password = wx.TextCtrl(panel, -1, '', size=(300,-1), pos=(10,10), style = wx.TE_PASSWORD)
+	self.Bind(wx.EVT_TEXT, lambda evt: self.OnTryPassword(evt, current_password, new_password), current_password)
+	box.Add(current_password, 0, wx.ALL)
 
-	enter_button = wx.Button(panel, -1, 'Go')
 
-	enter_button.Bind(wx.EVT_BUTTON, lambda evt: self.OnEnterButton(evt, edit_text.GetValue(), result_text))
+	new_prompt_text = wx.StaticText(panel, -1, 'Please enter a new password:')
+	box.Add(new_prompt_text, 0, wx.ALL)
+
+	new_password = wx.TextCtrl(panel, -1, '', size=(300,-1), pos=(10,10), style = wx.TE_PASSWORD)
+	box.Add(new_password, 0, wx.ALL)
+	self.Bind(wx.EVT_TEXT, lambda evt: self.OnTypeNewPassword(evt, confirm_password), new_password)
+	new_password.Disable()
+
+	confirm_prompt_text = wx.StaticText(panel, -1, 'Please confirm the new password:')
+	box.Add(confirm_prompt_text, 0, wx.ALL)
+
+	confirm_password = wx.TextCtrl(panel, -1, '', size=(300,-1), pos=(10,10), style = wx.TE_PASSWORD)
+	box.Add(confirm_password, 0, wx.ALL)
+	self.Bind(wx.EVT_TEXT, lambda evt: self.OnConfirmNewPassword(evt, new_password, enter_button), confirm_password)
+	confirm_password.Disable()
+
+	enter_button = wx.Button(panel, -1, 'Change')
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnEnterButton(evt, new_password.GetValue()), enter_button)
+	enter_button.Disable()
 
 	box.Add(enter_button, 0, wx.ALL)
-
-	result_text = wx.TextCtrl(panel, -1, '', style = wx.TE_READONLY, size=(200,-1))
-	box.Add(result_text, 0, wx.ALL)
 
 	panel.SetSizer(box)
 	panel.Layout()
 
-    def OnEnterButton(self, evt, password, result_text):
-	
-	hash = encrypted_password
-	outcome = sha256_crypt.verify(password, encrypted_password)
+    def OnTryPassword(self, evt, field_to_compare, field_to_unlock):
 
-	if outcome == True:
-	    result_text.SetValue('Correct password!')
+	outcome = sha256_crypt.verify(field_to_compare.GetValue(), encrypted_password)	
+
+	if outcome == True: 
+	    field_to_unlock.Enable()
 	else:
-	    result_text.SetValue('Incorrect password!')
+	    field_to_unlock.Disable()
 
+    def OnTypeNewPassword(self, evt, field_to_unlock):
 
+	if evt.GetEventObject().GetValue() != '':
+	    field_to_unlock.Enable()
+        else:
+	    field_to_unlock.Disable()
+
+    def OnConfirmNewPassword(self, evt, field_to_compare, button_to_unlock):
+	
+	if evt.GetEventObject().GetValue() == field_to_compare.GetValue():
+	    button_to_unlock.Enable()
+	else:
+	    button_to_unlock.Disable()
+    
+
+    def OnEnterButton(self, evt, new_password):
+	
+	dlg = wx.MessageDialog(self, "Are you sure you want to change your password?", "Confirm Password Change", wx.YES_NO|wx.ICON_QUESTION)
+        result = dlg.ShowModal()
+        dlg.Destroy()
+	
+	if result == wx.ID_YES:
+	
+	    hash = sha256_crypt.encrypt(new_password)
+
+	    cfg["password"] = hash	
+	    with open("config.yml", "w") as u_cfg:
+	        yaml.dump(cfg, u_cfg)
+
+	    self.MakeModal(False)
+	    self.Destroy()
+		    
+	    info_dlg = wx.MessageDialog(self, "Password has been changed.", "Change Password", wx.OK| wx.ICON_INFORMATION)
+	    info_result = info_dlg.ShowModal()  
+ 
     def OnClose(self, evt):
 	self.MakeModal(False)
 	evt.Skip()
 	
-
 
 app = wx.App(redirect=True)
 top = Frame("SHIT Remote Firing System")
