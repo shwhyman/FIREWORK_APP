@@ -104,7 +104,7 @@ class Frame(wx.Frame):
                 self.Destroy()   
 	
     def OnNewGroup(self, evt, parent, destination):
-	test_FireGroup = FireGroup(parent, wx.ALL)
+	test_FireGroup = FireGroup(parent, destination, wx.ALL)
 	destination.Add(test_FireGroup, 0, 0, 0)
 	parent.SetSizer(destination)
 	parent.Layout()
@@ -203,15 +203,20 @@ class PasswordSettings(wx.Frame):
 
 class FireGroup(wx.Panel):
 
-    def __init__(self, parent, id):
+    def __init__(self, parent, destination, id):
 	wx.Panel.__init__(self, parent, id, size = (400,-1), style=wx.SUNKEN_BORDER)
+
 	self.parent = parent
+	self.destination = destination
+
 	self.SetBackgroundColour('#d3d3d3')
 
 	hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
 	group_name = wx.TextCtrl(self, -1, 'Title', size=(150,-1))
 	hor_box.Add(group_name, 0, 0, 0)
+
+	self.group_name = group_name.GetValue()
 
 	list_of_things = ['one', 'two', 'three']
 
@@ -235,22 +240,59 @@ class FireGroup(wx.Panel):
 
 	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
 	hor_box.Add(delete_button, 0, 0, 0)
-	self.Bind(wx.EVT_BUTTON, self.OnDelete, delete_button)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, parent, destination), delete_button)
+
+
+	info_file = "info_button.png"
+	info_image = wx.Image(info_file, wx.BITMAP_TYPE_ANY)
+	info_image = info_image.Scale(21, 21, wx.IMAGE_QUALITY_HIGH)
+	info_image = info_image.ConvertToBitmap()
+
+	info_button = wx.BitmapButton(self, -1, bitmap = info_image, size = (info_image.GetWidth()+9, info_image.GetHeight()+9))
+	self.Bind(wx.EVT_BUTTON, self.OnInfo, info_button)
+	hor_box.Add(info_button, 0, 0, 0)
 
 	self.SetSizer(hor_box)
 
 
-    def OnDelete(self, evt):
+    def OnDelete(self, evt, parent, dest):
 	dlg = wx.MessageDialog(self, "Are you sure you want to delete this group?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
+	    self.GetName()
 	    self.Destroy()
 
     def OnAdd(self, evt, box):
 	box.Append('four')
+
+    def OnInfo(self, evt):
+
+	info_frame = TextFrame()
+	info_frame.Show(True)
+	info_frame.MakeModal(True)
+
 	
+class TextFrame(wx.Frame):
 	
+    def __init__(self):
+	
+	wx.Frame.__init__(self, None, title="Group Info", pos=(250,250))
+	self.Bind(wx.EVT_CLOSE, self.OnClose)
+	
+	panel = wx.Panel(self)
+	box = wx.BoxSizer(wx.VERTICAL)
+
+	panel.SetSizer(box)
+	panel.Layout()
+
+    def OnClose(self, evt):
+	self.MakeModal(False)
+	evt.Skip()
+
+
+
+
 
 
 app = wx.App(redirect=True)
