@@ -47,14 +47,14 @@ class Frame(wx.Frame):
 
 	self.SetMenuBar(menuBar)
 
-
 	panel = wx.Panel(self)
 	box = wx.BoxSizer(wx.VERTICAL)
 
 	edit_text = wx.TextCtrl(panel, -1, the_text, size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
 	box.Add(edit_text, 0, wx.ALL)
 
-
+	test_FireGroup = FireGroup(panel, wx.ALL)
+	box.Add(test_FireGroup, 0, wx.ALL)
 
 
 	panel.SetSizer(box)
@@ -186,6 +186,40 @@ class PasswordSettings(wx.Frame):
 	self.MakeModal(False)
 	evt.Skip()
 	
+
+class FireGroup(wx.Panel):
+
+    def __init__(self, parent, id):
+	wx.Panel.__init__(self, parent, id, size = (400,-1), style=wx.SUNKEN_BORDER)
+	self.parent = parent
+	self.SetBackgroundColour('#d3d3d3')
+
+	hor_box = wx.BoxSizer(wx.HORIZONTAL)
+
+	group_name = wx.TextCtrl(self, -1, 'hi', size=(100,-1))
+	hor_box.Add(group_name, 0, 0, 0)
+
+	list_of_things = ['one', 'two', 'three']
+
+	combo_box = wx.ComboBox(self, choices=list_of_things)
+	hor_box.Add(combo_box, 0, 0, 0)
+
+	group_name_2 = wx.TextCtrl(self, -1, 'no', size=(100,-1))
+	hor_box.Add(group_name_2, 0, 0, 0)
+	group_name_3 = wx.TextCtrl(self, -1, 'hi', size=(100,-1))
+	hor_box.Add(group_name_3, 0, 0, 0)
+
+	self.SetSizer(hor_box)
+
+
+	#listed = ['one', 'two', 'three']
+	#cb = wx.ComboBox(self, -1, pos = (50,70),choices = numbers, style=wx.CB_READONLY)
+	#hor_box.Add(cb, 0, wx.ALL)
+
+        
+	
+	
+
 
 app = wx.App(redirect=True)
 top = Frame("SHIT Remote Firing System")
