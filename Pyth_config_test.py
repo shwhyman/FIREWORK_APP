@@ -35,11 +35,22 @@ class Frame(wx.Frame):
 	menuBar.Append(file_menu, "File")
 
 
+	#Edit menu
+	
+	edit_menu = wx.Menu()
+
+	m_new_group = edit_menu.Append(-1, "N&ew Group", "Add a new group")
+
+	self.Bind(wx.EVT_MENU, lambda evt: self.OnNewGroup(evt, panel, box), m_new_group)
+
+	menuBar.Append(edit_menu, "Edit")
+
+
 	#Settings menu
 
         settings_menu = wx.Menu()
 
-	m_password_settings = settings_menu.Append(0, "Change Password")
+	m_password_settings = settings_menu.Append(-1, "Change Password")
 	self.Bind(wx.EVT_MENU, self.OnPasswordSettings, m_password_settings)
 	
 
@@ -52,9 +63,6 @@ class Frame(wx.Frame):
 
 	edit_text = wx.TextCtrl(panel, -1, the_text, size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
 	box.Add(edit_text, 0, wx.ALL)
-
-	test_FireGroup = FireGroup(panel, wx.ALL)
-	box.Add(test_FireGroup, 0, wx.ALL)
 
 
 	panel.SetSizer(box)
@@ -95,6 +103,12 @@ class Frame(wx.Frame):
             if result == wx.ID_YES:
                 self.Destroy()   
 	
+    def OnNewGroup(self, evt, parent, destination):
+	test_FireGroup = FireGroup(parent, wx.ALL)
+	destination.Add(test_FireGroup, 0, 0, 0)
+	parent.SetSizer(destination)
+	parent.Layout()
+
 
 class PasswordSettings(wx.Frame):
     
@@ -196,7 +210,7 @@ class FireGroup(wx.Panel):
 
 	hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
-	group_name = wx.TextCtrl(self, -1, 'hi', size=(100,-1))
+	group_name = wx.TextCtrl(self, -1, 'Title', size=(150,-1))
 	hor_box.Add(group_name, 0, 0, 0)
 
 	list_of_things = ['one', 'two', 'three']
@@ -204,19 +218,37 @@ class FireGroup(wx.Panel):
 	combo_box = wx.ComboBox(self, choices=list_of_things)
 	hor_box.Add(combo_box, 0, 0, 0)
 
-	group_name_2 = wx.TextCtrl(self, -1, 'no', size=(100,-1))
-	hor_box.Add(group_name_2, 0, 0, 0)
-	group_name_3 = wx.TextCtrl(self, -1, 'hi', size=(100,-1))
-	hor_box.Add(group_name_3, 0, 0, 0)
+	add_file = "add_button.png"
+	add_image = wx.Image(add_file, wx.BITMAP_TYPE_ANY)
+	add_image = add_image.Scale(30,30, wx.IMAGE_QUALITY_HIGH)
+	add_image = add_image.ConvertToBitmap()	
+
+	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
+	hor_box.Add(add_button, 0, 0, 0)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnAdd(evt, combo_box), add_button)
+
+
+	delete_file = "delete_button.png"
+	delete_image = wx.Image(delete_file, wx.BITMAP_TYPE_ANY)
+	delete_image = delete_image.Scale(19,19, wx.IMAGE_QUALITY_HIGH)
+	delete_image = delete_image.ConvertToBitmap()	
+
+	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
+	hor_box.Add(delete_button, 0, 0, 0)
+	self.Bind(wx.EVT_BUTTON, self.OnDelete, delete_button)
 
 	self.SetSizer(hor_box)
 
 
-	#listed = ['one', 'two', 'three']
-	#cb = wx.ComboBox(self, -1, pos = (50,70),choices = numbers, style=wx.CB_READONLY)
-	#hor_box.Add(cb, 0, wx.ALL)
+    def OnDelete(self, evt):
+	dlg = wx.MessageDialog(self, "Are you sure you want to delete this group?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
+        result = dlg.ShowModal()
+        dlg.Destroy() 
+	if result == wx.ID_YES:
+	    self.Destroy()
 
-        
+    def OnAdd(self, evt, box):
+	box.Append('four')
 	
 	
 
