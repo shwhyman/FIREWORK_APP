@@ -225,36 +225,31 @@ class FireGroup(wx.Panel):
 	combo_box = wx.ComboBox(self, choices=list_of_things)
 	hor_box.Add(combo_box, 0, 0, 0)
 
-	add_file = "add_button.png"
-	add_image = wx.Image(add_file, wx.BITMAP_TYPE_ANY)
-	add_image = add_image.Scale(30,30, wx.IMAGE_QUALITY_HIGH)
-	add_image = add_image.ConvertToBitmap()	
 
+	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
 	hor_box.Add(add_button, 0, 0, 0)
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnAdd(evt, combo_box), add_button)
 
 
-	delete_file = "delete_button.png"
-	delete_image = wx.Image(delete_file, wx.BITMAP_TYPE_ANY)
-	delete_image = delete_image.Scale(19,19, wx.IMAGE_QUALITY_HIGH)
-	delete_image = delete_image.ConvertToBitmap()	
-
+	delete_image = FireGroup.MakeIcon(self,"delete_button.png", 19, 19)
 	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
 	hor_box.Add(delete_button, 0, 0, 0)
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, parent, destination), delete_button)
 
-
-	info_file = "info_button.png"
-	info_image = wx.Image(info_file, wx.BITMAP_TYPE_ANY)
-	info_image = info_image.Scale(21, 21, wx.IMAGE_QUALITY_HIGH)
-	info_image = info_image.ConvertToBitmap()
-
+	info_image = FireGroup.MakeIcon(self,"info_button.png", 21, 21)
 	info_button = wx.BitmapButton(self, -1, bitmap = info_image, size = (info_image.GetWidth()+9, info_image.GetHeight()+9))
 	self.Bind(wx.EVT_BUTTON, self.OnInfo, info_button)
 	hor_box.Add(info_button, 0, 0, 0)
 
+
 	self.SetSizer(hor_box)
+
+    def MakeIcon(self,the_file, scalex, scaley):
+	image = wx.Image(the_file, wx.BITMAP_TYPE_ANY)
+	image = image.Scale(scalex, scaley, wx.IMAGE_QUALITY_HIGH)
+	image = image.ConvertToBitmap()
+	return image
 
 
     def OnDelete(self, evt, parent, dest):
