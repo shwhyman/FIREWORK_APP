@@ -13,6 +13,7 @@ encrypted_password = cfg['password']
 
 
 
+
 class Frame(wx.Frame):
     def __init__(self, title):
 
@@ -52,7 +53,23 @@ class Frame(wx.Frame):
 
 	m_password_settings = settings_menu.Append(-1, "Change Password")
 	self.Bind(wx.EVT_MENU, self.OnPasswordSettings, m_password_settings)
+
+	arduino_menu = wx.Menu()
+
+	MEGA = arduino_menu.Append(wx.ID_ANY, 'MEGA', kind = wx.ITEM_RADIO)	
+	UNO = arduino_menu.Append(wx.ID_ANY, 'UNO', kind = wx.ITEM_RADIO)	
+	settings_menu.AppendMenu(wx.ID_ANY, "ARDUINO", arduino_menu)
+
+	if cfg['ARDUINOS']['MEGA']['active'] == True:
+	    MEGA.Check()
+	else:
+	    UNO.Check()
+
+	self.Bind(wx.EVT_MENU, lambda evt: self.OnChooseArduino(evt, 'MEGA', 'UNO' ), MEGA)
+	self.Bind(wx.EVT_MENU, lambda evt: self.OnChooseArduino(evt, 'UNO', 'MEGA' ), UNO)
 	
+	
+		
 
 	menuBar.Append(settings_menu, "Settings")
 
@@ -67,6 +84,13 @@ class Frame(wx.Frame):
 
 	panel.SetSizer(box)
 	panel.Layout()
+
+    def OnChooseArduino(self, event, name, other_name):
+	cfg['ARDUINOS'][name]['active'] = True	
+	cfg['ARDUINOS'][other_name]['active'] = False
+	with open("config.yml", "w") as u_cfg:
+	    yaml.dump(cfg, u_cfg)
+
 
     def OnPasswordSettings(self, event):
 	password_frame = PasswordSettings()
@@ -215,21 +239,19 @@ class FireGroup(wx.Panel):
 	
 	hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
-	group_name = wx.TextCtrl(self, -1, 'Title', size=(150,-1))
+	group_name = wx.TextCtrl(self, -1, 'Title', size=(200,-1))
 	hor_box.Add(group_name, 0, 0, 0)
 
 	self.group_name = group_name.GetValue()
 
 	list_of_things = ['one', 'two', 'three']
 
-	combo_box = wx.ComboBox(self, choices=list_of_things)
-	hor_box.Add(combo_box, 0, 0, 0)
 
 
 	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
 	hor_box.Add(add_button, 0, 0, 0)
-	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnAdd(evt, combo_box), add_button)
+	self.Bind(wx.EVT_BUTTON, self.OnAdd, add_button)
 
 
 	delete_image = FireGroup.MakeIcon(self,"delete_button.png", 19, 19)
@@ -260,8 +282,8 @@ class FireGroup(wx.Panel):
 	    self.GetName()
 	    self.Destroy()
 
-    def OnAdd(self, evt, box):
-	box.Append('four')
+    def OnAdd(self, evt):
+	print 'pressed add'
 
     def OnInfo(self, evt):
 
