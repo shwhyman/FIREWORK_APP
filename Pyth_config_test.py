@@ -209,8 +209,10 @@ class FireGroup(wx.Panel):
 	self.parent = parent
 	self.destination = destination
 
-	self.SetBackgroundColour('#d3d3d3')
+	self.blurb = ''
 
+	self.SetBackgroundColour('#d3d3d3')
+	
 	hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
 	group_name = wx.TextCtrl(self, -1, 'Title', size=(150,-1))
@@ -268,28 +270,42 @@ class FireGroup(wx.Panel):
 
     def OnInfo(self, evt):
 
-	info_frame = TextFrame()
+	info_frame = TextFrame(self, self.blurb)
 	info_frame.Show(True)
 	info_frame.MakeModal(True)
-
+	
 	
 class TextFrame(wx.Frame):
 	
-    def __init__(self):
+    def __init__(self, parent, contents):
+
+	self.contents = contents
+	self.parent = parent
 	
-	wx.Frame.__init__(self, None, title="Group Info", pos=(250,250))
+	wx.Frame.__init__(self, None, title="Group Info", pos=(300,250), size = (300,200), style= wx.SYSTEM_MENU | wx.CAPTION | wx.CLOSE_BOX)
 	self.Bind(wx.EVT_CLOSE, self.OnClose)
-	
+
 	panel = wx.Panel(self)
 	box = wx.BoxSizer(wx.VERTICAL)
 
-	panel.SetSizer(box)
-	panel.Layout()
+	midpan = wx.Panel(panel)
 
+	info_text = wx.TextCtrl(midpan, -1, contents, size=(280,180), pos = (10,10), style = wx.TE_MULTILINE)
+	self.Bind(wx.EVT_TEXT, lambda evt: self.OnEnterText(evt, info_text), info_text)
+
+
+	box.Add(midpan, 1, wx.EXPAND | wx.ALL)
+	panel.SetSizer(box)
+		
+	
     def OnClose(self, evt):
+	
 	self.MakeModal(False)
 	evt.Skip()
 
+    def OnEnterText(self, evt, text):
+	
+	self.parent.blurb = text.GetValue()
 
 
 
