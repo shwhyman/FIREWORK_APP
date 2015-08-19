@@ -3,20 +3,13 @@
 import wx, yaml
 from passlib.hash import sha256_crypt
 
-#Open the YAML file
-
-#with open("config.yml", 'r') as ymlfile:
- #   cfg = yaml.load(ymlfile)
-
-#the_text = cfg['text']
-#encrypted_password = cfg['password']
-
-
 class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
 
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
         self.Bind(wx.EVT_CLOSE, lambda evt: self.OnClose(evt, edit_text))
+
+	#Open the YAML file
 
 	self.config_file_name = config_file_name
 	self.config = {}
@@ -29,36 +22,28 @@ class Frame(wx.Frame):
         #File menu
 
 	file_menu = wx.Menu()
-
 	m_exit = file_menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Exit")
 	self.Bind(wx.EVT_MENU, lambda evt: self.OnClose(evt, edit_text), m_exit)
-
 	m_save = file_menu.Append(wx.ID_SAVE,"S&ave\tAlt-S", "Save")
 	self.Bind(wx.EVT_MENU, lambda evt: self.OnSave(evt, edit_text), m_save)
-
 	menuBar.Append(file_menu, "File")
 
 
 	#Edit menu
 	
 	edit_menu = wx.Menu()
-
 	m_new_group = edit_menu.Append(-1, "N&ew Group", "Add a new group")
-
-	self.Bind(wx.EVT_MENU, lambda evt: self.OnNewGroup(evt, self.panel, self.box), m_new_group)
-
+	self.Bind(wx.EVT_MENU, self.OnNewGroup, m_new_group)
 	menuBar.Append(edit_menu, "Edit")
 
 
 	#Settings menu
 
         settings_menu = wx.Menu()
-
 	m_password_settings = settings_menu.Append(-1, "Change Password")
 	self.Bind(wx.EVT_MENU, self.OnPasswordSettings, m_password_settings)
 
 	arduino_menu = wx.Menu()
-
 	MEGA = arduino_menu.Append(wx.ID_ANY, 'MEGA', kind = wx.ITEM_RADIO)	
 	UNO = arduino_menu.Append(wx.ID_ANY, 'UNO', kind = wx.ITEM_RADIO)	
 	settings_menu.AppendMenu(wx.ID_ANY, "ARDUINO", arduino_menu)
@@ -128,11 +113,11 @@ class Frame(wx.Frame):
             if result == wx.ID_YES:
                 self.Destroy()   
 	
-    def OnNewGroup(self, evt, parent, destination):
-	test_FireGroup = FireGroup(parent, destination, wx.ALL)
-	destination.Add(test_FireGroup, 0, 0, 0)
-	parent.SetSizer(destination)
-	parent.Layout()
+    def OnNewGroup(self, evt):
+	test_FireGroup = FireGroup(self.panel, self.box, wx.ALL)
+	self.box.Add(test_FireGroup, 0, 0, 0)
+	self.panel.SetSizerAndFit(self.box)
+	self.panel.Layout()
 
 
 class PasswordSettings(wx.Frame):
@@ -244,37 +229,36 @@ class FireGroup(wx.Panel):
 
 	self.ver_box = wx.BoxSizer(wx.VERTICAL)
 
-	main_hor_box = wx.BoxSizer(wx.HORIZONTAL)
+	self.main_hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
 	group_name = wx.TextCtrl(self, -1, 'Title', size=(200,-1))
-	main_hor_box.Add(group_name, 0, 0, 0)
+	self.main_hor_box.Add(group_name, 0, 0, 0)
 
 	self.group_name = group_name.GetValue()
 
 	combo_box = wx.ComboBox(self, -1, choices=['1', '2'], size = (60,-1))
-	main_hor_box.Add(combo_box, 0, 0, 0)
+	self.main_hor_box.Add(combo_box, 0, 0, 0)
 
 	
 
 	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
-	main_hor_box.Add(add_button, 0, 0, 0)
+	self.main_hor_box.Add(add_button, 0, 0, 0)
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnAdd(evt, self, self.ver_box), add_button)
 
 	info_image = FireGroup.MakeIcon(self,"info_button.png", 21, 21)
 	info_button = wx.BitmapButton(self, -1, bitmap = info_image, size = (info_image.GetWidth()+9, info_image.GetHeight()+9))
 	self.Bind(wx.EVT_BUTTON, self.OnInfo, info_button)
-	main_hor_box.Add(info_button, 0, 0, 0)
+	self.main_hor_box.Add(info_button, 0, 0, 0)
 
 	delete_image = FireGroup.MakeIcon(self,"delete_button.png", 19, 19)
 	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
-	main_hor_box.Add(delete_button, 0, 0, 0)
-	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, parent, destination), delete_button)
+	self.main_hor_box.Add(delete_button, 0, 0, 0)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, self.parent, self.destination), delete_button)
 
 
 
-	self.ver_box.Add(main_hor_box, 0, 0, 0)
-
+	self.ver_box.Add(self.main_hor_box, 0, 0, 0)
 
 	self.SetSizer(self.ver_box)
 
@@ -286,19 +270,22 @@ class FireGroup(wx.Panel):
 	return image
 
 
-    def OnDelete(self, evt, parent, dest):
+    def OnDelete(self, evt, parent, destination):
 	dlg = wx.MessageDialog(self, "Are you sure you want to delete this group?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
 	    self.GetName()
 	    self.Destroy()
+	    parent.SetSizerAndFit(destination) 
+	    
 
     def OnAdd(self, evt, parent, destination):
 	new_sub_group = SubFireGroup(parent, destination, wx.ALL)
 	destination.Add(new_sub_group, 0, 0, 0)
-	parent.SetSizerAndFit(destination)
-	parent.Layout()
+	self.SetSizerAndFit(destination)
+	self.parent.SetSizerAndFit(self.destination)
+	#parent.Layout()
 	
 
     def OnInfo(self, evt):
@@ -340,6 +327,7 @@ class SubFireGroup(wx.Panel):
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
+	    parent.SetSizerAndFit(dest)
 	    self.Destroy()
 	    
 
