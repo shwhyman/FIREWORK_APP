@@ -1,22 +1,28 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 
 import wx, yaml
 from passlib.hash import sha256_crypt
 
 #Open the YAML file
 
-with open("config.yml", 'r') as ymlfile:
-    cfg = yaml.load(ymlfile)
+#with open("config.yml", 'r') as ymlfile:
+ #   cfg = yaml.load(ymlfile)
 
-the_text = cfg['text']
-encrypted_password = cfg['password']
+#the_text = cfg['text']
+#encrypted_password = cfg['password']
 
 
 class Frame(wx.Frame):
-    def __init__(self, title):
+    def __init__(self, title, config_file_name="config.yml"):
 
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
         self.Bind(wx.EVT_CLOSE, lambda evt: self.OnClose(evt, edit_text))
+
+	self.config_file_name = config_file_name
+	self.config = {}
+        with open(config_file_name, 'r') as ymlfile:
+            self.config = yaml.load(ymlfile)
+
 
 	menuBar = wx.MenuBar()
 
@@ -39,7 +45,7 @@ class Frame(wx.Frame):
 
 	m_new_group = edit_menu.Append(-1, "N&ew Group", "Add a new group")
 
-	self.Bind(wx.EVT_MENU, lambda evt: self.OnNewGroup(evt, panel, box), m_new_group)
+	self.Bind(wx.EVT_MENU, lambda evt: self.OnNewGroup(evt, self.panel, self.box), m_new_group)
 
 	menuBar.Append(edit_menu, "Edit")
 
@@ -57,58 +63,56 @@ class Frame(wx.Frame):
 	UNO = arduino_menu.Append(wx.ID_ANY, 'UNO', kind = wx.ITEM_RADIO)	
 	settings_menu.AppendMenu(wx.ID_ANY, "ARDUINO", arduino_menu)
 
-	if cfg['ARDUINOS']['MEGA']['active'] == True:
+	if self.config['ARDUINOS']['MEGA']['active'] == True:
 	    MEGA.Check()
 	else:
 	    UNO.Check()
 
 	self.Bind(wx.EVT_MENU, lambda evt: self.OnChooseArduino(evt, 'MEGA', 'UNO' ), MEGA)
 	self.Bind(wx.EVT_MENU, lambda evt: self.OnChooseArduino(evt, 'UNO', 'MEGA' ), UNO)
-	
-	
-		
+			
 
 	menuBar.Append(settings_menu, "Settings")
 
 	self.SetMenuBar(menuBar)
 
-	panel = wx.Panel(self)
-	box = wx.BoxSizer(wx.VERTICAL)
+	self.panel = wx.Panel(self)
+	self.box = wx.BoxSizer(wx.VERTICAL)
 
-	edit_text = wx.TextCtrl(panel, -1, the_text, size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
-	box.Add(edit_text, 0, wx.ALL)
+	edit_text = wx.TextCtrl(self.panel, -1, self.config["text"], size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
+	self.box.Add(edit_text, 0, wx.ALL)
 
 
-	panel.SetSizer(box)
-	panel.Layout()
+	self.panel.SetSizer(self.box)
+	self.panel.Layout()
 
     def OnChooseArduino(self, event, name, other_name):
-	cfg['ARDUINOS'][name]['active'] = True	
-	cfg['ARDUINOS'][other_name]['active'] = False
-	with open("config.yml", "w") as u_cfg:
-	    yaml.dump(cfg, u_cfg)
+	self.config['ARDUINOS'][name]['active'] = True	
+	self.config['ARDUINOS'][other_name]['active'] = False
+	with open(self.config_file_name, "w") as u_cfg:
+	    yaml.dump(self.config, u_cfg)
 
 
     def OnPasswordSettings(self, event):
-	password_frame = PasswordSettings()
+	password_frame = PasswordSettings(self.config, self.config_file_name)
 	password_frame.Show(True)
 	password_frame.MakeModal(True)
 
 
     def OnSave(self, event, text):
 	text_value = text.GetValue()	
-	cfg["text"] = text_value	
-	with open("config.yml", "w") as u_cfg:
-	    yaml.dump(cfg, u_cfg)
+	self.config["text"] = text_value	
+	with open(self.config_file_name, "w") as u_cfg:
+	    yaml.dump(self.config, u_cfg)
 
     def Save(self, text):
 	text_value = text.GetValue()	
-	cfg["text"] = text_value	
-	with open("config.yml", "w") as u_cfg:
-	    yaml.dump(cfg, u_cfg)
+	self.config["text"] = text_value	
+	with open(self.config_file_name, "w") as u_cfg:
+	    yaml.dump(self.config, u_cfg)
 
     def OnClose(self, event, text):
-	if text.GetValue() != cfg["text"]:
+	if text.GetValue() != self.config["text"]:
             dlg = wx.MessageDialog(self, "Would you like to save the changes you have made?", "Save Changes?", wx.YES_NO|wx.CANCEL|wx.ICON_QUESTION)
             result = dlg.ShowModal()
             dlg.Destroy()
@@ -133,8 +137,12 @@ class Frame(wx.Frame):
 
 class PasswordSettings(wx.Frame):
     
-    def __init__(self):
+    def __init__(self, config, config_file_name):
         wx.Frame.__init__(self, None, title="Password Settings", pos=(250,250))
+
+	self.config = config
+	self.config_file_name = config_file_name
+
 	self.Bind(wx.EVT_CLOSE, self.OnClose)	
 
 	panel = wx.Panel(self)
@@ -175,7 +183,7 @@ class PasswordSettings(wx.Frame):
 
     def OnTryPassword(self, evt, field_to_compare, field_to_unlock):
 
-	outcome = sha256_crypt.verify(field_to_compare.GetValue(), encrypted_password)	
+	outcome = sha256_crypt.verify(field_to_compare.GetValue(), self.config["password"])	
 
 	if outcome == True: 
 	    field_to_unlock.Enable()
@@ -205,11 +213,10 @@ class PasswordSettings(wx.Frame):
 	
 	if result == wx.ID_YES:
 	
-	    hash = sha256_crypt.encrypt(new_password)
 
-	    cfg["password"] = hash	
-	    with open("config.yml", "w") as u_cfg:
-	        yaml.dump(cfg, u_cfg)
+	    self.config["password"] = sha256_crypt.encrypt(new_password)	
+	    with open(self.config_file_name, "w") as u_cfg:
+	        yaml.dump(self.config, u_cfg)
 
 	    self.MakeModal(False)
 	    self.Destroy()
@@ -252,7 +259,7 @@ class FireGroup(wx.Panel):
 	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
 	main_hor_box.Add(add_button, 0, 0, 0)
-	self.Bind(wx.EVT_BUTTON, self.OnAdd, add_button)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnAdd(evt, self, self.ver_box), add_button)
 
 	info_image = FireGroup.MakeIcon(self,"info_button.png", 21, 21)
 	info_button = wx.BitmapButton(self, -1, bitmap = info_image, size = (info_image.GetWidth()+9, info_image.GetHeight()+9))
@@ -267,10 +274,6 @@ class FireGroup(wx.Panel):
 
 
 	self.ver_box.Add(main_hor_box, 0, 0, 0)
-
-
-	hor_box = SubFireGroup(self, wx.ALL)
-	self.ver_box.Add(hor_box)
 
 
 	self.SetSizer(self.ver_box)
@@ -291,13 +294,11 @@ class FireGroup(wx.Panel):
 	    self.GetName()
 	    self.Destroy()
 
-    def OnAdd(self, evt):
-	#new_subgroup = SubFireGroup(parent, wx.ALL)
-	#destination.Add(new_subgroup, 0, 0, 0)
-	new_hor_box = SubFireGroup(self, wx.ALL)
-	self.ver_box.Add(new_hor_box)
-	self.SetSizerAndFit(self.ver_box)
-	#self.Layout()
+    def OnAdd(self, evt, parent, destination):
+	new_sub_group = SubFireGroup(parent, destination, wx.ALL)
+	destination.Add(new_sub_group, 0, 0, 0)
+	parent.SetSizerAndFit(destination)
+	parent.Layout()
 	
 
     def OnInfo(self, evt):
@@ -306,18 +307,41 @@ class FireGroup(wx.Panel):
 	info_frame.Show(True)
 	info_frame.MakeModal(True)
 
-class SubFireGroup(wx.BoxSizer):
+class SubFireGroup(wx.Panel):
 	
-    def __init__(self, parent, id):
-	wx.BoxSizer.__init__(self, wx.HORIZONTAL)
+    def __init__(self, parent, destination, id):
+	wx.Panel.__init__(self, parent, id, size = (400, -1))
 
+	self.SetBackgroundColour('#d3d3d3')
 
-	subgroup_name = wx.TextCtrl(parent, -1, 'Sub Title', size=(200,-1))
-	self.Add(subgroup_name, 0, 0, 0)
-	combo_box = wx.ComboBox(parent, -1, choices=['1', '2'], size = (60,-1))
-	self.Add(combo_box, 0, 0, 0)
+	self.parent = parent
+	self.destination = destination
 
+	hor_box = wx.BoxSizer(wx.HORIZONTAL)
+
+	subgroup_name = wx.TextCtrl(self, -1, 'Sub Title', size=(200,-1))
+	hor_box.Add(subgroup_name, 0, 0, 0)
+	combo_box = wx.ComboBox(self, -1, choices=['1', '2'], size = (60,-1))
+	hor_box.Add(combo_box, 0, 0, 0)
+
+	remove_image = wx.Image("remove_button.png", wx.BITMAP_TYPE_ANY)
+	remove_image = remove_image.Scale(30, 30, wx.IMAGE_QUALITY_HIGH)
+	remove_image = remove_image.ConvertToBitmap()
+
+	remove_button = wx.BitmapButton(self, -1, bitmap = remove_image, size=(remove_image.GetWidth(),remove_image.GetHeight()))
+	hor_box.Add(remove_button, 0, 0, 0)
+
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnRemove(evt, parent, destination), remove_button)
 	
+	self.SetSizerAndFit(hor_box)
+
+    def OnRemove(self, evt, parent, dest):
+	dlg = wx.MessageDialog(parent, "Are you sure you want to delete this subgroup?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
+        result = dlg.ShowModal()
+        dlg.Destroy() 
+	if result == wx.ID_YES:
+	    self.Destroy()
+	    
 
 	
 	
@@ -358,10 +382,10 @@ class TextFrame(wx.Frame):
 
 
 
-
-app = wx.App(redirect=True)
-top = Frame("SHIT Remote Firing System")
-top.Show()
-app.MainLoop()
+if __name__ == '__main__':
+    app = wx.App(redirect=True)
+    top = Frame("SHIT Remote Firing System", config_file_name="config.yml")
+    top.Show()
+    app.MainLoop()
 
 
