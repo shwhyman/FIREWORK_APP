@@ -12,14 +12,11 @@ the_text = cfg['text']
 encrypted_password = cfg['password']
 
 
-
-
 class Frame(wx.Frame):
     def __init__(self, title):
 
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
         self.Bind(wx.EVT_CLOSE, lambda evt: self.OnClose(evt, edit_text))
-	
 
 	menuBar = wx.MenuBar()
 
@@ -234,38 +231,50 @@ class FireGroup(wx.Panel):
 	self.destination = destination
 
 	self.blurb = ''
+	self.sub_groups = {}
 
 	self.SetBackgroundColour('#d3d3d3')
-	
-	hor_box = wx.BoxSizer(wx.HORIZONTAL)
+
+	self.ver_box = wx.BoxSizer(wx.VERTICAL)
+
+	main_hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
 	group_name = wx.TextCtrl(self, -1, 'Title', size=(200,-1))
-	hor_box.Add(group_name, 0, 0, 0)
+	main_hor_box.Add(group_name, 0, 0, 0)
 
 	self.group_name = group_name.GetValue()
 
-	list_of_things = ['one', 'two', 'three']
+	combo_box = wx.ComboBox(self, -1, choices=['1', '2'], size = (60,-1))
+	main_hor_box.Add(combo_box, 0, 0, 0)
 
-
+	
 
 	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
-	hor_box.Add(add_button, 0, 0, 0)
+	main_hor_box.Add(add_button, 0, 0, 0)
 	self.Bind(wx.EVT_BUTTON, self.OnAdd, add_button)
-
-
-	delete_image = FireGroup.MakeIcon(self,"delete_button.png", 19, 19)
-	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
-	hor_box.Add(delete_button, 0, 0, 0)
-	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, parent, destination), delete_button)
 
 	info_image = FireGroup.MakeIcon(self,"info_button.png", 21, 21)
 	info_button = wx.BitmapButton(self, -1, bitmap = info_image, size = (info_image.GetWidth()+9, info_image.GetHeight()+9))
 	self.Bind(wx.EVT_BUTTON, self.OnInfo, info_button)
-	hor_box.Add(info_button, 0, 0, 0)
+	main_hor_box.Add(info_button, 0, 0, 0)
+
+	delete_image = FireGroup.MakeIcon(self,"delete_button.png", 19, 19)
+	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
+	main_hor_box.Add(delete_button, 0, 0, 0)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, parent, destination), delete_button)
 
 
-	self.SetSizer(hor_box)
+
+	self.ver_box.Add(main_hor_box, 0, 0, 0)
+
+
+	hor_box = SubFireGroup(self, wx.ALL)
+	self.ver_box.Add(hor_box)
+
+
+	self.SetSizer(self.ver_box)
+
 
     def MakeIcon(self,the_file, scalex, scaley):
 	image = wx.Image(the_file, wx.BITMAP_TYPE_ANY)
@@ -283,13 +292,35 @@ class FireGroup(wx.Panel):
 	    self.Destroy()
 
     def OnAdd(self, evt):
-	print 'pressed add'
+	#new_subgroup = SubFireGroup(parent, wx.ALL)
+	#destination.Add(new_subgroup, 0, 0, 0)
+	new_hor_box = SubFireGroup(self, wx.ALL)
+	self.ver_box.Add(new_hor_box)
+	self.SetSizerAndFit(self.ver_box)
+	#self.Layout()
+	
 
     def OnInfo(self, evt):
 
 	info_frame = TextFrame(self, self.blurb)
 	info_frame.Show(True)
 	info_frame.MakeModal(True)
+
+class SubFireGroup(wx.BoxSizer):
+	
+    def __init__(self, parent, id):
+	wx.BoxSizer.__init__(self, wx.HORIZONTAL)
+
+
+	subgroup_name = wx.TextCtrl(parent, -1, 'Sub Title', size=(200,-1))
+	self.Add(subgroup_name, 0, 0, 0)
+	combo_box = wx.ComboBox(parent, -1, choices=['1', '2'], size = (60,-1))
+	self.Add(combo_box, 0, 0, 0)
+
+	
+
+	
+	
 	
 	
 class TextFrame(wx.Frame):
