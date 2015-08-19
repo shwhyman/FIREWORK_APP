@@ -2,4 +2,4 @@ ARDUINOS:
   MEGA: {active: true, channels: 54, name: MEGA}
   UNO: {active: false, channels: 14, name: UNO}
 password: $5$rounds=535000$Uq75eElEg79tZfqq$e/8G1ZEuVZJYWv2Hngoby7Bg4afCqskr.QYPfXQeRS.
-text: The quick brown fox jumps over the lazy dog.
+text: !!python/unicode 'Hello fox'
