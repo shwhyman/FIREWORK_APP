@@ -285,7 +285,6 @@ class FireGroup(wx.Panel):
 	destination.Add(new_sub_group, 0, 0, 0)
 	self.SetSizerAndFit(destination)
 	self.parent.SetSizerAndFit(self.destination)
-	#parent.Layout()
 	
 
     def OnInfo(self, evt):
@@ -312,23 +311,27 @@ class SubFireGroup(wx.Panel):
 	hor_box.Add(combo_box, 0, 0, 0)
 
 	remove_image = wx.Image("remove_button.png", wx.BITMAP_TYPE_ANY)
-	remove_image = remove_image.Scale(30, 30, wx.IMAGE_QUALITY_HIGH)
+	remove_image = remove_image.Scale(28, 28, wx.IMAGE_QUALITY_HIGH)
 	remove_image = remove_image.ConvertToBitmap()
 
-	remove_button = wx.BitmapButton(self, -1, bitmap = remove_image, size=(remove_image.GetWidth(),remove_image.GetHeight()))
+	remove_button = wx.BitmapButton(self, -1, bitmap = remove_image, size=(remove_image.GetWidth()+2,remove_image.GetHeight()+2))
 	hor_box.Add(remove_button, 0, 0, 0)
 
-	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnRemove(evt, parent, destination), remove_button)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnRemove(evt, self.parent, self.destination), remove_button)
 	
 	self.SetSizerAndFit(hor_box)
 
-    def OnRemove(self, evt, parent, dest):
-	dlg = wx.MessageDialog(parent, "Are you sure you want to delete this subgroup?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
+    def OnRemove(self, evt, parent, destination):
+	dlg = wx.MessageDialog(self.parent, "Are you sure you want to delete this subgroup?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
-	    parent.SetSizerAndFit(dest)
 	    self.Destroy()
+	    parent.SetSizerAndFit(destination)
+	    parent.parent.SetSizerAndFit(parent.destination)
+	    
+	    
+	   
 	    
 
 	
