@@ -256,7 +256,7 @@ class FireGroup(wx.Panel):
 	self.group_name = group_name.GetValue()
 
 
-	self.channel_combo_box = wx.ComboBox(self, -1, choices=map(str, self.main_frame.channel_list), size = (60,-1))
+	self.channel_combo_box = wx.ComboBox(self, -1, choices=map(str, self.main_frame.channel_list), size = (60,-1), style = wx.CB_READONLY)
 	self.main_hor_box.Add(self.channel_combo_box, 0, 0, 0)
 		
 	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
@@ -283,14 +283,14 @@ class FireGroup(wx.Panel):
 	self.SetSizer(self.ver_box)
 
 
-    def OnGetComboValue(self, evt):
+    def OnGetComboValue(self, evt):	
 
-	if self.current_channel in self.main_frame.occupied_channels:
+        if self.current_channel in self.main_frame.occupied_channels:
 	 
 	    self.main_frame.occupied_channels.remove(str(self.current_channel))
 	    self.main_frame.channel_list.append(str(self.current_channel))
 
-	new_channel = evt.GetEventObject().GetStringSelection()
+	new_channel = self.channel_combo_box.GetStringSelection()
 	
 	self.main_frame.occupied_channels.append(str(new_channel))
 	self.main_frame.occupied_channels = map(str,self.main_frame.occupied_channels )
@@ -301,15 +301,12 @@ class FireGroup(wx.Panel):
 	    if self.main_frame.occupied_channels[x] in self.main_frame.channel_list:
 		self.main_frame.channel_list.remove(self.main_frame.occupied_channels[x])
 
+	self.main_frame.channel_list = sorted(self.main_frame.channel_list, key=int)
 
 	for objects in self.main_frame.FireGroup_list:
 	    objects.channel_combo_box.Clear()
 	    for channels in self.main_frame.channel_list:
 		objects.channel_combo_box.Append(channels)
-	
-	print self.main_frame.channel_list
-	print self.main_frame.occupied_channels
-	
 
 
     def MakeIcon(self,the_file, scalex, scaley):
@@ -324,6 +321,18 @@ class FireGroup(wx.Panel):
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
+	    
+	    if self.current_channel in self.main_frame.occupied_channels:
+	        self.main_frame.occupied_channels.remove(str(self.current_channel))
+	        self.main_frame.channel_list.append(str(self.current_channel))
+
+	    self.main_frame.channel_list = sorted(self.main_frame.channel_list, key=int)
+
+	    for objects in self.main_frame.FireGroup_list:
+	        objects.channel_combo_box.Clear()
+	        for channels in self.main_frame.channel_list:
+		    objects.channel_combo_box.Append(channels)
+
 	    self.main_frame.FireGroup_list.remove(self)
 	    self.Destroy()
 	    parent.SetSizerAndFit(destination) 
@@ -379,12 +388,6 @@ class SubFireGroup(wx.Panel):
 	    parent.SetSizerAndFit(destination)
 	    parent.parent.SetSizerAndFit(parent.destination)
 	    
-	    
-	   
-	    
-
-	
-	
 	
 	
 class TextFrame(wx.Frame):
