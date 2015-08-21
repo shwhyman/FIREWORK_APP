@@ -9,7 +9,7 @@ class Frame(wx.Frame):
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
         self.Bind(wx.EVT_CLOSE, lambda evt: self.OnClose(evt, edit_text))
 
-	#Open the YAML file
+	#---OPEN THE YAML FILE---#
 
 	self.config_file_name = config_file_name
 	self.config = {}
@@ -30,7 +30,7 @@ class Frame(wx.Frame):
 
 	menuBar = wx.MenuBar()
 
-        #File menu
+        #---FILE MENU---#
 
 	file_menu = wx.Menu()
 	m_exit = file_menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Exit")
@@ -40,7 +40,7 @@ class Frame(wx.Frame):
 	menuBar.Append(file_menu, "File")
 
 
-	#Edit menu
+	#---EDIT MENU---#
 	
 	edit_menu = wx.Menu()
 	m_new_group = edit_menu.Append(-1, "N&ew Group", "Add a new group")
@@ -48,7 +48,7 @@ class Frame(wx.Frame):
 	menuBar.Append(edit_menu, "Edit")
 
 
-	#Settings menu
+	#---SETTINGS MENU---#
 
         settings_menu = wx.Menu()
 	m_password_settings = settings_menu.Append(-1, "Change Password")
@@ -72,7 +72,7 @@ class Frame(wx.Frame):
 
 	self.SetMenuBar(menuBar)
 
-	#Tempory Text box
+	#---TEMPORARY TEXT BOX---#
 
 	self.panel = wx.Panel(self)
 	self.box = wx.BoxSizer(wx.VERTICAL)
@@ -80,13 +80,12 @@ class Frame(wx.Frame):
 	edit_text = wx.TextCtrl(self.panel, -1, self.config["text"], size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
 	self.box.Add(edit_text, 0, wx.ALL)
 
-	#Load list of FireGroup objects
-
 	self.FireGroup_list = []
 
-	for groups_names in self.config["FIREGROUPS"]:
+	#---LOAD LIST OF FIREGROUP OBJECTS FROM CONFIG---#
 
-	  
+	for groups_names in self.config["FIREGROUPS"]:
+  
 	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)	    
 	    self.FireGroup_list.append(new_FireGroup)
 	    new_FireGroup.ChangeName(str(self.config["FIREGROUPS"][groups_names]["name"]))
@@ -122,15 +121,12 @@ class Frame(wx.Frame):
 		    for sub_channels in self.channel_list:
 		        sub_objects.channel_combo_box.Append(sub_channels)
 		
-	    
-
 	    self.box.Add(new_FireGroup, 0, 0, 0)
 	    self.panel.SetSizerAndFit(self.box)
    
-
-
 	self.panel.SetSizer(self.box)
 	self.panel.Layout()
+
 
     def OnChooseArduino(self, event, name, other_name):
 	self.config['ARDUINOS'][name]['active'] = True	
@@ -151,11 +147,13 @@ class Frame(wx.Frame):
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
 
+
     def Save(self, text):
 	text_value = text.GetValue()	
 	self.config["text"] = text_value	
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
+
 
     def OnClose(self, event, text):
 	if text.GetValue() != self.config["text"]:
@@ -173,9 +171,9 @@ class Frame(wx.Frame):
             dlg.Destroy()
             if result == wx.ID_YES:
                 self.Destroy()   
-	
-    def OnNewGroup(self, evt):
 
+
+    def OnNewGroup(self, evt):
 	if not self.channel_list:
 	    dlg = wx.MessageDialog(self, "There are no more available channels!", "New Group", wx.OK)
 	    result = dlg.ShowModal()
@@ -297,7 +295,6 @@ class FireGroup(wx.Panel):
 	self.blurb = ''
 	self.sub_groups = {}
 
-
 	self.SubFireGroup_list = []
 
 	self.ver_box = wx.BoxSizer(wx.VERTICAL)
@@ -307,14 +304,11 @@ class FireGroup(wx.Panel):
 	self.group_name_field = wx.TextCtrl(self, -1, self.group_name, size=(200,-1))
 	self.main_hor_box.Add(self.group_name_field, 0, 0, 0)
 	
-
-
 	self.channel_combo_box = wx.ComboBox(self, -1, choices=map(str, self.main_frame.channel_list), size = (60,-1), style = wx.CB_READONLY)
 	self.main_hor_box.Add(self.channel_combo_box, 0, 0, 0)	
 	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
 
 	self.current_channel = ''
-
 	    	
 	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
@@ -330,7 +324,6 @@ class FireGroup(wx.Panel):
 	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
 	self.main_hor_box.Add(delete_button, 0, 0, 0)
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDelete(evt, self.parent, self.destination), delete_button)
-
 
 	self.ver_box.Add(self.main_hor_box, 0, 0, 0)
 	self.SetSizer(self.ver_box)
@@ -373,6 +366,7 @@ class FireGroup(wx.Panel):
 		for sub_channels in self.main_frame.channel_list:
 		    sub_objects.channel_combo_box.Append(sub_channels)
 
+
     def MakeIcon(self,the_file, scalex, scaley):
 	image = wx.Image(the_file, wx.BITMAP_TYPE_ANY)
 	image = image.Scale(scalex, scaley, wx.IMAGE_QUALITY_HIGH)
@@ -390,13 +384,13 @@ class FireGroup(wx.Panel):
 	        self.main_frame.occupied_channels.remove(str(self.current_channel))
 	        self.main_frame.channel_list.append(str(self.current_channel))
 
-	    self.main_frame.channel_list = sorted(self.main_frame.channel_list, key=int)
-
 	    for my_sub_objects in self.SubFireGroup_list:
 	    	self.main_frame.occupied_channels.remove(str(my_sub_objects.current_channel))
 	        self.main_frame.channel_list.append(str(my_sub_objects.current_channel))
 		self.SubFireGroup_list.remove(my_sub_objects)
 	        my_sub_objects.Destroy()
+		
+	    self.main_frame.channel_list = sorted(self.main_frame.channel_list, key=int)
 
 
 	    for objects in self.main_frame.FireGroup_list:
@@ -429,10 +423,10 @@ class FireGroup(wx.Panel):
 	
 
     def OnInfo(self, evt):
-
 	info_frame = TextFrame(self, self.blurb)
 	info_frame.Show(True)
 	info_frame.MakeModal(True)
+
 
 class SubFireGroup(wx.Panel):
 	
@@ -471,9 +465,11 @@ class SubFireGroup(wx.Panel):
 	self.subgroup_name = new_name
 	self.subgroup_name_field.SetValue(str(self.subgroup_name))
 
+
     def ChangeChannel(self, new_channel):
 	self.current_channel = new_channel
 	self.channel_combo_box.SetValue(str(new_channel))
+
 
     def OnGetComboValue(self, evt):	
 
@@ -553,18 +549,15 @@ class TextFrame(wx.Frame):
 	info_text = wx.TextCtrl(midpan, -1, contents, size=(280,180), pos = (10,10), style = wx.TE_MULTILINE)
 	self.Bind(wx.EVT_TEXT, lambda evt: self.OnEnterText(evt, info_text), info_text)
 
-
 	box.Add(midpan, 1, wx.EXPAND | wx.ALL)
 	panel.SetSizer(box)
 		
 	
     def OnClose(self, evt):
-	
 	self.MakeModal(False)
 	evt.Skip()
 
-    def OnEnterText(self, evt, text):
-	
+    def OnEnterText(self, evt, text):	
 	self.parent.blurb = text.GetValue()
 
 
@@ -573,5 +566,3 @@ if __name__ == '__main__':
     top = Frame("SHIT Remote Firing System", config_file_name="config.yml")
     top.Show()
     app.MainLoop()
-
-
