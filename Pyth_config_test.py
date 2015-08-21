@@ -237,6 +237,8 @@ class FireGroup(wx.Panel):
     def __init__(self, main_frame, parent, destination, id):
 	wx.Panel.__init__(self, parent, id, size = (400,-1), style=wx.SUNKEN_BORDER)
 
+	self.SetBackgroundColour('#d3d3d3')
+
 	self.main_frame = main_frame
 	self.parent = parent
 	self.destination = destination
@@ -244,21 +246,19 @@ class FireGroup(wx.Panel):
 	self.blurb = ''
 	self.sub_groups = {}
 
-	self.SetBackgroundColour('#d3d3d3')
+
+	self.SubFireGroup_list = []
 
 	self.ver_box = wx.BoxSizer(wx.VERTICAL)
-
 	self.main_hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
 	group_name = wx.TextCtrl(self, -1, 'Title', size=(200,-1))
 	self.main_hor_box.Add(group_name, 0, 0, 0)
-
 	self.group_name = group_name.GetValue()
 
 
 	self.channel_combo_box = wx.ComboBox(self, -1, choices=map(str, self.main_frame.channel_list), size = (60,-1), style = wx.CB_READONLY)
-	self.main_hor_box.Add(self.channel_combo_box, 0, 0, 0)
-		
+	self.main_hor_box.Add(self.channel_combo_box, 0, 0, 0)	
 	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
 
 	self.current_channel = self.channel_combo_box.GetStringSelection()
@@ -307,7 +307,11 @@ class FireGroup(wx.Panel):
 	    objects.channel_combo_box.Clear()
 	    for channels in self.main_frame.channel_list:
 		objects.channel_combo_box.Append(channels)
-
+	
+	    for sub_objects in objects.SubFireGroup_list:
+		sub_objects.channel_combo_box.Clear()
+		for sub_channels in self.main_frame.channel_list:
+		    sub_objects.channel_combo_box.Append(sub_channels)
 
     def MakeIcon(self,the_file, scalex, scaley):
 	image = wx.Image(the_file, wx.BITMAP_TYPE_ANY)
@@ -328,10 +332,23 @@ class FireGroup(wx.Panel):
 
 	    self.main_frame.channel_list = sorted(self.main_frame.channel_list, key=int)
 
+	    for my_sub_objects in self.SubFireGroup_list:
+	    	self.main_frame.occupied_channels.remove(str(my_sub_objects.current_channel))
+	        self.main_frame.channel_list.append(str(my_sub_objects.current_channel))
+		self.SubFireGroup_list.remove(my_sub_objects)
+	        my_sub_objects.Destroy()
+
+
 	    for objects in self.main_frame.FireGroup_list:
 	        objects.channel_combo_box.Clear()
 	        for channels in self.main_frame.channel_list:
 		    objects.channel_combo_box.Append(channels)
+
+		for sub_objects in objects.SubFireGroup_list:
+		    sub_objects.channel_combo_box.Clear()
+		    for sub_channels in self.main_frame.channel_list:
+		        sub_objects.channel_combo_box.Append(sub_channels)
+	     
 
 	    self.main_frame.FireGroup_list.remove(self)
 	    self.Destroy()
@@ -343,6 +360,7 @@ class FireGroup(wx.Panel):
 	destination.Add(new_sub_group, 0, 0, 0)
 	self.SetSizerAndFit(destination)
 	self.parent.SetSizerAndFit(self.destination)
+	self.SubFireGroup_list.append(new_sub_group)
 	
 
     def OnInfo(self, evt):
@@ -365,8 +383,11 @@ class SubFireGroup(wx.Panel):
 
 	subgroup_name = wx.TextCtrl(self, -1, 'Sub Title', size=(200,-1))
 	hor_box.Add(subgroup_name, 0, 0, 0)
-	combo_box = wx.ComboBox(self, -1, choices=['1', '2'], size = (60,-1))
-	hor_box.Add(combo_box, 0, 0, 0)
+	self.channel_combo_box = wx.ComboBox(self, -1, choices= self.parent.main_frame.channel_list, size = (60,-1))
+	hor_box.Add(self.channel_combo_box, 0, 0, 0)
+	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
+	
+	self.current_channel = self.channel_combo_box.GetStringSelection()
 
 	remove_image = wx.Image("remove_button.png", wx.BITMAP_TYPE_ANY)
 	remove_image = remove_image.Scale(28, 28, wx.IMAGE_QUALITY_HIGH)
@@ -379,11 +400,60 @@ class SubFireGroup(wx.Panel):
 	
 	self.SetSizerAndFit(hor_box)
 
+    def OnGetComboValue(self, evt):	
+
+        if self.current_channel in self.parent.main_frame.occupied_channels:
+	 
+	    self.parent.main_frame.occupied_channels.remove(str(self.current_channel))
+	    self.parent.main_frame.channel_list.append(str(self.current_channel))
+
+	new_channel = self.channel_combo_box.GetStringSelection()
+	
+	self.parent.main_frame.occupied_channels.append(str(new_channel))
+	self.parent.main_frame.occupied_channels = map(str,self.parent.main_frame.occupied_channels )
+
+	self.current_channel = new_channel
+
+	for x in range(0, len(self.parent.main_frame.occupied_channels)):
+	    if self.parent.main_frame.occupied_channels[x] in self.parent.main_frame.channel_list:
+		self.parent.main_frame.channel_list.remove(self.parent.main_frame.occupied_channels[x])
+
+	self.parent.main_frame.channel_list = sorted(self.parent.main_frame.channel_list, key=int)
+
+	for objects in self.parent.main_frame.FireGroup_list:
+	    objects.channel_combo_box.Clear()
+	    for channels in self.parent.main_frame.channel_list:
+		objects.channel_combo_box.Append(channels)
+	
+	    for sub_objects in objects.SubFireGroup_list:
+		sub_objects.channel_combo_box.Clear()
+		for sub_channels in self.parent.main_frame.channel_list:
+		    sub_objects.channel_combo_box.Append(sub_channels)
+
+
     def OnRemove(self, evt, parent, destination):
 	dlg = wx.MessageDialog(self.parent, "Are you sure you want to delete this subgroup?", "Confirm Deletion", wx.YES_NO|wx.ICON_QUESTION)
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
+
+	    if self.current_channel in self.parent.main_frame.occupied_channels:
+	        self.parent.main_frame.occupied_channels.remove(str(self.current_channel))
+	        self.parent.main_frame.channel_list.append(str(self.current_channel))
+
+	    self.parent.main_frame.channel_list = sorted(self.parent.main_frame.channel_list, key=int)
+
+	    for objects in self.parent.main_frame.FireGroup_list:
+	        objects.channel_combo_box.Clear()
+	        for channels in self.parent.main_frame.channel_list:
+		    objects.channel_combo_box.Append(channels)
+
+		for sub_objects in objects.SubFireGroup_list:
+		    sub_objects.channel_combo_box.Clear()
+		    for sub_channels in self.parent.main_frame.channel_list:
+		        sub_objects.channel_combo_box.Append(sub_channels)
+
+	    self.parent.SubFireGroup_list.remove(self)
 	    self.Destroy()
 	    parent.SetSizerAndFit(destination)
 	    parent.parent.SetSizerAndFit(parent.destination)
