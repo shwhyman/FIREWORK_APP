@@ -26,6 +26,7 @@ class Frame(wx.Frame):
 	self.occupied_channels = []
 	self.occupied_channels = map(str,self.occupied_channels)
 	self.channel_list = map(str, self.channel_list)
+  
 
 	menuBar = wx.MenuBar()
 
@@ -79,9 +80,53 @@ class Frame(wx.Frame):
 	edit_text = wx.TextCtrl(self.panel, -1, self.config["text"], size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
 	self.box.Add(edit_text, 0, wx.ALL)
 
-	#List of FireGroup objects
+	#Load list of FireGroup objects
 
 	self.FireGroup_list = []
+
+	for groups_names in self.config["FIREGROUPS"]:
+
+	  
+	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)	    
+	    self.FireGroup_list.append(new_FireGroup)
+	    new_FireGroup.ChangeName(str(self.config["FIREGROUPS"][groups_names]["name"]))
+	    new_FireGroup.ChangeChannel(str(self.config["FIREGROUPS"][groups_names]["channel"]))
+	    	    
+	    self.occupied_channels.append(str(self.config["FIREGROUPS"][groups_names]["channel"]))
+	    self.channel_list.remove(str(self.config["FIREGROUPS"][groups_names]["channel"]))   
+	    
+ 	    for sub_name, sub_channel in self.config["FIREGROUPS"][groups_names]["sub_groups"].iteritems():
+		new_sub_group = SubFireGroup(new_FireGroup, new_FireGroup.ver_box, wx.ALL)
+		new_FireGroup.ver_box.Add(new_sub_group, 0, 0, 0)
+		new_FireGroup.SetSizerAndFit(new_FireGroup.ver_box)
+	      
+	        new_FireGroup.SubFireGroup_list.append(new_sub_group)
+
+		new_sub_group.ChangeName(str(sub_name))
+		new_sub_group.ChangeChannel(str(sub_channel))
+
+		self.occupied_channels.append(str(sub_channel))
+		self.channel_list.remove(str(sub_channel))
+	   
+	    self.channel_list = sorted(self.channel_list, key=int)	    
+
+            for objects in self.FireGroup_list:
+		
+	        objects.channel_combo_box.Clear()
+		
+	        for channels in self.channel_list:
+		    objects.channel_combo_box.Append(channels)
+	        
+	        for sub_objects in objects.SubFireGroup_list:
+		    sub_objects.channel_combo_box.Clear()
+		    for sub_channels in self.channel_list:
+		        sub_objects.channel_combo_box.Append(sub_channels)
+		
+	    
+
+	    self.box.Add(new_FireGroup, 0, 0, 0)
+	    self.panel.SetSizerAndFit(self.box)
+   
 
 
 	self.panel.SetSizer(self.box)
@@ -130,13 +175,19 @@ class Frame(wx.Frame):
                 self.Destroy()   
 	
     def OnNewGroup(self, evt):
-	new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)
-	self.box.Add(new_FireGroup, 0, 0, 0)
-	self.panel.SetSizerAndFit(self.box)
 
-	self.FireGroup_list.append(new_FireGroup)	
+	if not self.channel_list:
+	    dlg = wx.MessageDialog(self, "There are no more available channels!", "New Group", wx.OK)
+	    result = dlg.ShowModal()
+	    dlg.Destroy()
+	else:
+	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)
+	    self.box.Add(new_FireGroup, 0, 0, 0)
+	    self.panel.SetSizerAndFit(self.box)
 
-	self.panel.Layout()
+	    self.FireGroup_list.append(new_FireGroup)	
+
+	    self.panel.Layout()
 
 
 class PasswordSettings(wx.Frame):
@@ -252,16 +303,18 @@ class FireGroup(wx.Panel):
 	self.ver_box = wx.BoxSizer(wx.VERTICAL)
 	self.main_hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
-	group_name = wx.TextCtrl(self, -1, 'Title', size=(200,-1))
-	self.main_hor_box.Add(group_name, 0, 0, 0)
-	self.group_name = group_name.GetValue()
+	self.group_name = ''
+	self.group_name_field = wx.TextCtrl(self, -1, self.group_name, size=(200,-1))
+	self.main_hor_box.Add(self.group_name_field, 0, 0, 0)
+	
 
 
 	self.channel_combo_box = wx.ComboBox(self, -1, choices=map(str, self.main_frame.channel_list), size = (60,-1), style = wx.CB_READONLY)
 	self.main_hor_box.Add(self.channel_combo_box, 0, 0, 0)	
 	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
 
-	self.current_channel = self.channel_combo_box.GetStringSelection()
+	self.current_channel = ''
+
 	    	
 	add_image = FireGroup.MakeIcon(self,"add_button.png", 30, 30)
 	add_button = wx.BitmapButton(self, -1, bitmap = add_image, size=(add_image.GetWidth(),add_image.GetHeight()))
@@ -282,11 +335,18 @@ class FireGroup(wx.Panel):
 	self.ver_box.Add(self.main_hor_box, 0, 0, 0)
 	self.SetSizer(self.ver_box)
 
+    def ChangeName(self, new_name):
+	self.group_name = new_name
+	self.group_name_field.SetValue(str(self.group_name))
+
+    def ChangeChannel(self, new_channel):
+	self.current_channel = new_channel
+	self.channel_combo_box.SetValue(str(new_channel))
 
     def OnGetComboValue(self, evt):	
-
-        if self.current_channel in self.main_frame.occupied_channels:
-	 
+	
+        if str(self.current_channel) in self.main_frame.occupied_channels:
+	    
 	    self.main_frame.occupied_channels.remove(str(self.current_channel))
 	    self.main_frame.channel_list.append(str(self.current_channel))
 
@@ -356,11 +416,16 @@ class FireGroup(wx.Panel):
 	    
 
     def OnAdd(self, evt, parent, destination):
-	new_sub_group = SubFireGroup(parent, destination, wx.ALL)
-	destination.Add(new_sub_group, 0, 0, 0)
-	self.SetSizerAndFit(destination)
-	self.parent.SetSizerAndFit(self.destination)
-	self.SubFireGroup_list.append(new_sub_group)
+	if not self.main_frame.channel_list:
+	    dlg = wx.MessageDialog(self, "There are no more available channels!", "New Group", wx.OK)
+	    result = dlg.ShowModal()
+	    dlg.Destroy()
+	else:
+	    new_sub_group = SubFireGroup(parent, destination, wx.ALL)
+	    destination.Add(new_sub_group, 0, 0, 0)
+	    self.SetSizerAndFit(destination)
+	    self.parent.SetSizerAndFit(self.destination)
+	    self.SubFireGroup_list.append(new_sub_group)
 	
 
     def OnInfo(self, evt):
@@ -381,13 +446,15 @@ class SubFireGroup(wx.Panel):
 
 	hor_box = wx.BoxSizer(wx.HORIZONTAL)
 
-	subgroup_name = wx.TextCtrl(self, -1, 'Sub Title', size=(200,-1))
-	hor_box.Add(subgroup_name, 0, 0, 0)
+	self.subgroup_name = ''
+
+	self.subgroup_name_field = wx.TextCtrl(self, -1, self.subgroup_name, size=(200,-1))
+	hor_box.Add(self.subgroup_name_field, 0, 0, 0)
 	self.channel_combo_box = wx.ComboBox(self, -1, choices= self.parent.main_frame.channel_list, size = (60,-1))
 	hor_box.Add(self.channel_combo_box, 0, 0, 0)
 	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
 	
-	self.current_channel = self.channel_combo_box.GetStringSelection()
+	self.current_channel = ''
 
 	remove_image = wx.Image("remove_button.png", wx.BITMAP_TYPE_ANY)
 	remove_image = remove_image.Scale(28, 28, wx.IMAGE_QUALITY_HIGH)
@@ -399,6 +466,14 @@ class SubFireGroup(wx.Panel):
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnRemove(evt, self.parent, self.destination), remove_button)
 	
 	self.SetSizerAndFit(hor_box)
+
+    def ChangeName(self, new_name):
+	self.subgroup_name = new_name
+	self.subgroup_name_field.SetValue(str(self.subgroup_name))
+
+    def ChangeChannel(self, new_channel):
+	self.current_channel = new_channel
+	self.channel_combo_box.SetValue(str(new_channel))
 
     def OnGetComboValue(self, evt):	
 
