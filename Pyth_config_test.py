@@ -2,6 +2,7 @@
 
 import wx, yaml
 from passlib.hash import sha256_crypt
+from collections import OrderedDict
 
 class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
@@ -15,7 +16,7 @@ class Frame(wx.Frame):
 	self.config = {}
         with open(config_file_name, 'r') as ymlfile:
             self.config = yaml.load(ymlfile)
-	
+
 	arduino_model = ''
 
 	for model in self.config['ARDUINOS']:
@@ -153,21 +154,25 @@ class Frame(wx.Frame):
 
 	self.config["FIREGROUPS"].clear()	
 	
+	main_ordered_dict = OrderedDict()
+
 	for group in self.FireGroup_list:
 	    name = group.group_name
 	    channel = group.current_channel
 	    
-	    sub_dict = {}	
+	    sub_dict = OrderedDict()	
 
 	    for sub_groups in group.SubFireGroup_list:
 		sub_name = sub_groups.subgroup_name
 	        sub_channel = sub_groups.current_channel
 		sub_dict[str(sub_name)] = str(sub_channel)
 
-	    append_dict = {'channel': str(channel), 'name': str(name), 'sub_groups': sub_dict}
+	    main_ordered_dict.update({str(name):{'channel': str(channel), 'name': str(name), 'sub_groups': sub_dict}})
 	    
 
-	    self.config["FIREGROUPS"][str(name)] = append_dict
+	    #self.config["FIREGROUPS"][str(name)] = append_dict
+	self.config["FIREGROUPS"] = main_ordered_dict
+
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
 	 
