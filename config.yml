@@ -9,9 +9,13 @@ ARDUINOS:
     name: UNO
 FIREGROUPS:
   First:
-    channel: 1
+    channel: '1'
     name: First
-    sub_groups: {sub_1: 2}
+    sub_groups: {!!python/unicode 'sub_1': '2'}
+  Test:
+    channel: '4'
+    name: Test
+    sub_groups: {!!python/unicode 'sub_2': !!python/unicode '9'}
 password: $5$rounds=535000$Uq75eElEg79tZfqq$e/8G1ZEuVZJYWv2Hngoby7Bg4afCqskr.QYPfXQeRS.
 text: !!python/unicode 'Now is the time for all good men to come to the aid of the
   party'
