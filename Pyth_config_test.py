@@ -89,10 +89,13 @@ class Frame(wx.Frame):
 	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)	    
 	    self.FireGroup_list.append(new_FireGroup)
 	    new_FireGroup.ChangeName(str(self.config["FIREGROUPS"][groups_names]["name"]))
-	    new_FireGroup.ChangeChannel(str(self.config["FIREGROUPS"][groups_names]["channel"]))
+
+	    if self.config["FIREGROUPS"][groups_names]["channel"] != '':
+
+	        new_FireGroup.ChangeChannel(str(self.config["FIREGROUPS"][groups_names]["channel"]))
 	    	    
-	    self.occupied_channels.append(str(self.config["FIREGROUPS"][groups_names]["channel"]))
-	    self.channel_list.remove(str(self.config["FIREGROUPS"][groups_names]["channel"]))   
+	        self.occupied_channels.append(str(self.config["FIREGROUPS"][groups_names]["channel"]))
+	        self.channel_list.remove(str(self.config["FIREGROUPS"][groups_names]["channel"]))   
 	    
  	    for sub_name, sub_channel in self.config["FIREGROUPS"][groups_names]["sub_groups"].iteritems():
 		new_sub_group = SubFireGroup(new_FireGroup, new_FireGroup.ver_box, wx.ALL)
@@ -102,10 +105,11 @@ class Frame(wx.Frame):
 	        new_FireGroup.SubFireGroup_list.append(new_sub_group)
 
 		new_sub_group.ChangeName(str(sub_name))
-		new_sub_group.ChangeChannel(str(sub_channel))
 
-		self.occupied_channels.append(str(sub_channel))
-		self.channel_list.remove(str(sub_channel))
+	        if sub_channel != '':	
+		    new_sub_group.ChangeChannel(str(sub_channel))
+		    self.occupied_channels.append(str(sub_channel))
+		    self.channel_list.remove(str(sub_channel))
 	   
 	    self.channel_list = sorted(self.channel_list, key=int)	    
 
@@ -147,6 +151,24 @@ class Frame(wx.Frame):
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
 
+	
+	for group in self.FireGroup_list:
+	    name = group.group_name
+	    channel = group.current_channel
+	    
+	    sub_dict = {}	
+
+	    for sub_groups in group.SubFireGroup_list:
+		sub_name = sub_groups.subgroup_name
+	        sub_channel = sub_groups.current_channel
+		sub_dict[sub_name] = sub_channel
+
+	    append_dict = {'channel': channel, 'name': str(name), 'sub_groups': sub_dict}
+	    
+
+	    self.config["FIREGROUPS"][str(name)] = append_dict
+	    with open(self.config_file_name, "w") as u_cfg:
+	        yaml.dump(self.config, u_cfg)
 
     def Save(self, text):
 	text_value = text.GetValue()	
@@ -303,6 +325,7 @@ class FireGroup(wx.Panel):
 	self.group_name = ''
 	self.group_name_field = wx.TextCtrl(self, -1, self.group_name, size=(200,-1))
 	self.main_hor_box.Add(self.group_name_field, 0, 0, 0)
+	self.Bind(wx.EVT_TEXT, self.OnChangeName, self.group_name_field)
 	
 	self.channel_combo_box = wx.ComboBox(self, -1, choices=map(str, self.main_frame.channel_list), size = (60,-1), style = wx.CB_READONLY)
 	self.main_hor_box.Add(self.channel_combo_box, 0, 0, 0)	
@@ -327,6 +350,10 @@ class FireGroup(wx.Panel):
 
 	self.ver_box.Add(self.main_hor_box, 0, 0, 0)
 	self.SetSizer(self.ver_box)
+
+    def OnChangeName(self, evt):
+	new_name = evt.GetEventObject().GetValue()
+	self.ChangeName(new_name)
 
     def ChangeName(self, new_name):
 	self.group_name = new_name
@@ -444,6 +471,8 @@ class SubFireGroup(wx.Panel):
 
 	self.subgroup_name_field = wx.TextCtrl(self, -1, self.subgroup_name, size=(200,-1))
 	hor_box.Add(self.subgroup_name_field, 0, 0, 0)
+	self.Bind(wx.EVT_TEXT, self.OnChangeName, self.subgroup_name_field)
+
 	self.channel_combo_box = wx.ComboBox(self, -1, choices= self.parent.main_frame.channel_list, size = (60,-1))
 	hor_box.Add(self.channel_combo_box, 0, 0, 0)
 	self.Bind(wx.EVT_COMBOBOX, self.OnGetComboValue, self.channel_combo_box)
@@ -460,6 +489,10 @@ class SubFireGroup(wx.Panel):
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnRemove(evt, self.parent, self.destination), remove_button)
 	
 	self.SetSizerAndFit(hor_box)
+
+    def OnChangeName(self, evt):
+	new_name = evt.GetEventObject().GetValue()
+	self.ChangeName(new_name)
 
     def ChangeName(self, new_name):
 	self.subgroup_name = new_name
