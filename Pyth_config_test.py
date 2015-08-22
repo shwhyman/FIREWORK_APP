@@ -147,10 +147,11 @@ class Frame(wx.Frame):
 
     def OnSave(self, event, text):
 	text_value = text.GetValue()	
-	self.config["text"] = text_value	
+	self.config["text"] = str(text_value)	
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
 
+	self.config["FIREGROUPS"].clear()	
 	
 	for group in self.FireGroup_list:
 	    name = group.group_name
@@ -161,14 +162,15 @@ class Frame(wx.Frame):
 	    for sub_groups in group.SubFireGroup_list:
 		sub_name = sub_groups.subgroup_name
 	        sub_channel = sub_groups.current_channel
-		sub_dict[sub_name] = sub_channel
+		sub_dict[str(sub_name)] = str(sub_channel)
 
-	    append_dict = {'channel': channel, 'name': str(name), 'sub_groups': sub_dict}
+	    append_dict = {'channel': str(channel), 'name': str(name), 'sub_groups': sub_dict}
 	    
 
 	    self.config["FIREGROUPS"][str(name)] = append_dict
-	    with open(self.config_file_name, "w") as u_cfg:
-	        yaml.dump(self.config, u_cfg)
+	with open(self.config_file_name, "w") as u_cfg:
+	    yaml.dump(self.config, u_cfg)
+	 
 
     def Save(self, text):
 	text_value = text.GetValue()	
