@@ -10,9 +10,9 @@ class Frame(wx.Frame):
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
+	self.somethings_changed = False
+
 	#---OPEN THE YAML FILE---#
-
-
 
 	self.config_file_name = config_file_name
 	self.config = {}
@@ -89,57 +89,8 @@ class Frame(wx.Frame):
 
 	self.Load()
 
-	'''
-
-	for groups_names in self.config["FIREGROUPS"]:
-  
-	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)	    
-	    self.FireGroup_list.append(new_FireGroup)
-	    new_FireGroup.ChangeName(str(self.config["FIREGROUPS"][groups_names]["name"]))
-	    new_FireGroup.blurb = self.config["FIREGROUPS"][groups_names]["blurb"]
-
-	    if self.config["FIREGROUPS"][groups_names]["channel"] != '':
-
-	        new_FireGroup.ChangeChannel(str(self.config["FIREGROUPS"][groups_names]["channel"]))
-	    	    
-	        self.occupied_channels.append(str(self.config["FIREGROUPS"][groups_names]["channel"]))
-	        self.channel_list.remove(str(self.config["FIREGROUPS"][groups_names]["channel"]))   
-	    
- 	    for sub_name, sub_channel in self.config["FIREGROUPS"][groups_names]["sub_groups"].iteritems():
-		new_sub_group = SubFireGroup(new_FireGroup, new_FireGroup.ver_box, wx.ALL)
-		new_FireGroup.ver_box.Add(new_sub_group, 0, 0, 0)
-		new_FireGroup.SetSizerAndFit(new_FireGroup.ver_box)
-	      
-	        new_FireGroup.SubFireGroup_list.append(new_sub_group)
-
-		new_sub_group.ChangeName(str(sub_name))
-
-	        if sub_channel != '':	
-		    new_sub_group.ChangeChannel(str(sub_channel))
-		    self.occupied_channels.append(str(sub_channel))
-		    self.channel_list.remove(str(sub_channel))
-	   
-	    self.channel_list = sorted(self.channel_list, key=int)	    
-
-            for objects in self.FireGroup_list:
-		
-	        objects.channel_combo_box.Clear()
-		
-	        for channels in self.channel_list:
-		    objects.channel_combo_box.Append(channels)
-	        
-	        for sub_objects in objects.SubFireGroup_list:
-		    sub_objects.channel_combo_box.Clear()
-		    for sub_channels in self.channel_list:
-		        sub_objects.channel_combo_box.Append(sub_channels)
-		
-	    self.box.Add(new_FireGroup, 0, 0, 0)
-	    self.panel.SetSizerAndFit(self.box)
-   
-	self.panel.SetSizer(self.box)
-	'''
-
 	self.panel.Layout()
+	self.somethings_changed = False
 
     def Load(self):
 
@@ -207,6 +158,9 @@ class Frame(wx.Frame):
 
 
     def Save(self):
+	
+	self.somethings_changed = False
+	
 	text_value = self.edit_text.GetValue()	
 	self.config["text"] = str(text_value)	
 	with open(self.config_file_name, "w") as u_cfg:
@@ -244,12 +198,12 @@ class Frame(wx.Frame):
 
 
     def OnClose(self, event):
-	if self.edit_text.GetValue() != self.config["text"]:
+	if self.somethings_changed == True:
             dlg = wx.MessageDialog(self, "Would you like to save the changes you have made?", "Save Changes?", wx.YES_NO|wx.CANCEL|wx.ICON_QUESTION)
             result = dlg.ShowModal()
             dlg.Destroy()
             if result == wx.ID_YES:
-	        Frame.Save(self, text)
+	        Frame.Save(self)
                 self.Destroy()   
 	    elif result == wx.ID_NO:
 	        self.Destroy()
@@ -274,6 +228,8 @@ class Frame(wx.Frame):
 	    self.FireGroup_list.append(new_FireGroup)	
 
 	    self.panel.Layout()
+
+	    self.somethings_changed = True
 
 
 class PasswordSettings(wx.Frame):
@@ -429,6 +385,9 @@ class FireGroup(wx.Panel):
 	self.SetSizer(self.ver_box)
 
     def OnUpArrow(self, evt, main_frame):
+
+	main_frame.Save()	
+
         this_index = main_frame.FireGroup_list.index(self)
 	if (this_index != 0) & (len(main_frame.FireGroup_list) != 1):
 	    main_frame.FireGroup_list[this_index], main_frame.FireGroup_list[this_index - 1] = main_frame.FireGroup_list[this_index - 1], main_frame.FireGroup_list[this_index]
@@ -449,6 +408,8 @@ class FireGroup(wx.Panel):
 	    main_frame.Load()
 	
     def OnDownArrow(self, evt, main_frame):
+
+	main_frame.Save()
 
 	this_index = main_frame.FireGroup_list.index(self)
 	if (this_index != len(main_frame.FireGroup_list)-1) & (len(main_frame.FireGroup_list) != 1):
@@ -472,6 +433,7 @@ class FireGroup(wx.Panel):
     def OnChangeName(self, evt):
 	new_name = evt.GetEventObject().GetValue()
 	self.group_name = new_name
+	self.main_frame.somethings_changed = True
 
     def ChangeName(self, new_name):
 	self.group_name = new_name
@@ -480,9 +442,12 @@ class FireGroup(wx.Panel):
     def ChangeChannel(self, new_channel):
 	self.current_channel = new_channel
 	self.channel_combo_box.SetValue(str(new_channel))
+	
 
     def OnGetComboValue(self, evt):	
 	
+	self.main_frame.somethings_changed = True
+
         if str(self.current_channel) in self.main_frame.occupied_channels:
 	    
 	    self.main_frame.occupied_channels.remove(str(self.current_channel))
@@ -524,14 +489,17 @@ class FireGroup(wx.Panel):
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
+
+	    self.main_frame.somethings_changed = True
 	    
 	    if self.current_channel in self.main_frame.occupied_channels:
 	        self.main_frame.occupied_channels.remove(str(self.current_channel))
 	        self.main_frame.channel_list.append(str(self.current_channel))
 
 	    for my_sub_objects in self.SubFireGroup_list:
-	    	self.main_frame.occupied_channels.remove(str(my_sub_objects.current_channel))
-	        self.main_frame.channel_list.append(str(my_sub_objects.current_channel))
+	        if my_sub_objects.current_channel in self.main_frame.occupied_channels:
+	    	    self.main_frame.occupied_channels.remove(str(my_sub_objects.current_channel))
+	            self.main_frame.channel_list.append(str(my_sub_objects.current_channel))
 		self.SubFireGroup_list.remove(my_sub_objects)
 	        my_sub_objects.Destroy()
 		
@@ -565,6 +533,7 @@ class FireGroup(wx.Panel):
 	    self.SetSizerAndFit(destination)
 	    self.parent.SetSizerAndFit(self.destination)
 	    self.SubFireGroup_list.append(new_sub_group)
+	    self.main_frame.somethings_changed = True
 	
 
     def OnInfo(self, evt):
@@ -611,6 +580,7 @@ class SubFireGroup(wx.Panel):
     def OnChangeName(self, evt):
 	new_name = evt.GetEventObject().GetValue()
 	self.subgroup_name = new_name
+	self.parent.main_frame.somethings_changed = True
 
     def ChangeName(self, new_name):
 	self.subgroup_name = new_name
@@ -623,6 +593,8 @@ class SubFireGroup(wx.Panel):
 
 
     def OnGetComboValue(self, evt):	
+
+	self.parent.main_frame.somethings_changed = True
 
         if self.current_channel in self.parent.main_frame.occupied_channels:
 	 
@@ -658,6 +630,8 @@ class SubFireGroup(wx.Panel):
         result = dlg.ShowModal()
         dlg.Destroy() 
 	if result == wx.ID_YES:
+
+	    self.parent.main_frame.somethings_changed = True
 
 	    if self.current_channel in self.parent.main_frame.occupied_channels:
 	        self.parent.main_frame.occupied_channels.remove(str(self.current_channel))
