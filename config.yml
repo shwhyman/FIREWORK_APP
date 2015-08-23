@@ -8,21 +8,20 @@ ARDUINOS:
     channels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     name: UNO
 FIREGROUPS: !!python/object/apply:collections.OrderedDict
-- - - F
-    - channel: '1'
-      name: F
+- - - G
+    - blurb: This is a blurb.
+      channel: '1'
+      name: G
       sub_groups: !!python/object/apply:collections.OrderedDict
-      - - [E, '2']
+      - - [F, '2']
+        - [E, '3']
   - - D
-    - channel: '3'
+    - blurb: This is another blurb.
+      channel: '4'
       name: D
       sub_groups: !!python/object/apply:collections.OrderedDict
-      - []
-  - - C
-    - channel: '4'
-      name: C
-      sub_groups: !!python/object/apply:collections.OrderedDict
-      - - [B, '5']
-        - [A, '6']
+      - - [C, '5']
+        - [B, '7']
+        - [A, '8']
 password: $5$rounds=535000$Uq75eElEg79tZfqq$e/8G1ZEuVZJYWv2Hngoby7Bg4afCqskr.QYPfXQeRS.
-text: Now is the time for all good men to come to the aid of the party
+text: Now is the time for all good men to come to the aid of the party.
