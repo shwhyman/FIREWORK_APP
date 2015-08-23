@@ -8,22 +8,29 @@ ARDUINOS:
     channels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     name: UNO
 FIREGROUPS: !!python/object/apply:collections.OrderedDict
-- - - B
+- - - B1
     - blurb: ''
-      channel: '2'
-      name: B
+      channel: '4'
+      name: B1
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
-  - - A
+  - - A1
     - blurb: ''
       channel: '1'
-      name: A
+      name: A1
       sub_groups: !!python/object/apply:collections.OrderedDict
-      - - [Oh shit, '5']
-  - - C
+      - - [A2, '2']
+        - [A3, '3']
+  - - C1
     - blurb: ''
-      channel: '3'
-      name: C
+      channel: '5'
+      name: C1
+      sub_groups: !!python/object/apply:collections.OrderedDict
+      - []
+  - - D1
+    - blurb: ''
+      channel: '6'
+      name: D1
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
 password: $5$rounds=535000$Uq75eElEg79tZfqq$e/8G1ZEuVZJYWv2Hngoby7Bg4afCqskr.QYPfXQeRS.
