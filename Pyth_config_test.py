@@ -8,22 +8,24 @@ class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
 
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
-        self.Bind(wx.EVT_CLOSE, lambda evt: self.OnClose(evt, edit_text))
+        self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 	#---OPEN THE YAML FILE---#
+
+
 
 	self.config_file_name = config_file_name
 	self.config = {}
         with open(config_file_name, 'r') as ymlfile:
             self.config = yaml.load(ymlfile)
 
-	arduino_model = ''
+	self.arduino_model = ''
 
 	for model in self.config['ARDUINOS']:
 	    if self.config['ARDUINOS'][model]['active'] == True:
-		arduino_model = model
+		self.arduino_model = model
 
-	self.channel_list = self.config['ARDUINOS'][arduino_model]['channels']
+	self.channel_list = self.config['ARDUINOS'][self.arduino_model]['channels']
 	self.occupied_channels = []
 	self.occupied_channels = map(str,self.occupied_channels)
 	self.channel_list = map(str, self.channel_list)
@@ -35,9 +37,9 @@ class Frame(wx.Frame):
 
 	file_menu = wx.Menu()
 	m_exit = file_menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Exit")
-	self.Bind(wx.EVT_MENU, lambda evt: self.OnClose(evt, edit_text), m_exit)
+	self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
 	m_save = file_menu.Append(wx.ID_SAVE,"S&ave\tAlt-S", "Save")
-	self.Bind(wx.EVT_MENU, lambda evt: self.OnSave(evt, edit_text), m_save)
+	self.Bind(wx.EVT_MENU, self.OnSave, m_save)
 	menuBar.Append(file_menu, "File")
 
 
@@ -78,12 +80,16 @@ class Frame(wx.Frame):
 	self.panel = wx.Panel(self)
 	self.box = wx.BoxSizer(wx.VERTICAL)
 
-	edit_text = wx.TextCtrl(self.panel, -1, self.config["text"], size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
-	self.box.Add(edit_text, 0, wx.ALL)
+	self.edit_text = wx.TextCtrl(self.panel, -1, self.config["text"], size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
+	self.box.Add(self.edit_text, 0, wx.ALL)
 
 	self.FireGroup_list = []
 
 	#---LOAD LIST OF FIREGROUP OBJECTS FROM CONFIG---#
+
+	self.Load()
+
+	'''
 
 	for groups_names in self.config["FIREGROUPS"]:
   
@@ -131,7 +137,60 @@ class Frame(wx.Frame):
 	    self.panel.SetSizerAndFit(self.box)
    
 	self.panel.SetSizer(self.box)
+	'''
+
 	self.panel.Layout()
+
+    def Load(self):
+
+	for groups_names in self.config["FIREGROUPS"]:
+  
+	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)	    
+	    self.FireGroup_list.append(new_FireGroup)
+	    new_FireGroup.ChangeName(str(self.config["FIREGROUPS"][groups_names]["name"]))
+	    new_FireGroup.blurb = self.config["FIREGROUPS"][groups_names]["blurb"]
+
+	    if self.config["FIREGROUPS"][groups_names]["channel"] != '':
+
+	        new_FireGroup.ChangeChannel(str(self.config["FIREGROUPS"][groups_names]["channel"]))
+	    	    
+	        self.occupied_channels.append(str(self.config["FIREGROUPS"][groups_names]["channel"]))
+	        self.channel_list.remove(str(self.config["FIREGROUPS"][groups_names]["channel"]))   
+	    
+ 	    for sub_name, sub_channel in self.config["FIREGROUPS"][groups_names]["sub_groups"].iteritems():
+		new_sub_group = SubFireGroup(new_FireGroup, new_FireGroup.ver_box, wx.ALL)
+		new_FireGroup.ver_box.Add(new_sub_group, 0, 0, 0)
+		new_FireGroup.SetSizerAndFit(new_FireGroup.ver_box)
+	      
+	        new_FireGroup.SubFireGroup_list.append(new_sub_group)
+
+		new_sub_group.ChangeName(str(sub_name))
+
+	        if sub_channel != '':	
+		    new_sub_group.ChangeChannel(str(sub_channel))
+		    self.occupied_channels.append(str(sub_channel))
+		    self.channel_list.remove(str(sub_channel))
+	   
+	    self.channel_list = sorted(self.channel_list, key=int)	    
+	
+	    #print len(self.FireGroup_list)
+
+            for objects in self.FireGroup_list:
+		
+	        objects.channel_combo_box.Clear()
+		
+	        for channels in self.channel_list:
+		    objects.channel_combo_box.Append(channels)
+	        
+	        for sub_objects in objects.SubFireGroup_list:
+		    sub_objects.channel_combo_box.Clear()
+		    for sub_channels in self.channel_list:
+		        sub_objects.channel_combo_box.Append(sub_channels)
+		
+	    self.box.Add(new_FireGroup, 0, 0, 0)
+	    self.panel.SetSizerAndFit(self.box)
+   
+	self.panel.SetSizer(self.box)
 
 
     def OnChooseArduino(self, event, name, other_name):
@@ -147,8 +206,8 @@ class Frame(wx.Frame):
 	password_frame.MakeModal(True)
 
 
-    def Save(self, text):
-	text_value = text.GetValue()	
+    def Save(self):
+	text_value = self.edit_text.GetValue()	
 	self.config["text"] = str(text_value)	
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
@@ -175,18 +234,17 @@ class Frame(wx.Frame):
 
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
+ 
 
-        
+    def OnSave(self, event):
+	self.Save()
 	dlg = wx.MessageDialog(self, "The changes you have made have been saved.", "Saved Changes", wx.OK|wx.ICON_INFORMATION)
         result = dlg.ShowModal()
-        dlg.Destroy() 
-
-    def OnSave(self, event, text):
-	self.Save(text)
+        dlg.Destroy()
 
 
-    def OnClose(self, event, text):
-	if text.GetValue() != self.config["text"]:
+    def OnClose(self, event):
+	if self.edit_text.GetValue() != self.config["text"]:
             dlg = wx.MessageDialog(self, "Would you like to save the changes you have made?", "Save Changes?", wx.YES_NO|wx.CANCEL|wx.ICON_QUESTION)
             result = dlg.ShowModal()
             dlg.Destroy()
@@ -346,10 +404,21 @@ class FireGroup(wx.Panel):
 	self.main_hor_box.Add(add_button, 0, 0, 0)
 	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnAdd(evt, self, self.ver_box), add_button)
 
+	up_image = FireGroup.MakeIcon(self,"up_arrow.png", 21, 21)
+	up_button = wx.BitmapButton(self, -1, bitmap = up_image, size = (up_image.GetWidth()+9, up_image.GetHeight()+9))
+	self.main_hor_box.Add(up_button, 0, 0, 0)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnUpArrow(evt, self.main_frame), up_button)
+
+	down_image = FireGroup.MakeIcon(self,"down_arrow.png", 21, 21)
+	down_button = wx.BitmapButton(self, -1, bitmap = down_image, size = (down_image.GetWidth()+9, down_image.GetHeight()+9))
+	self.main_hor_box.Add(down_button, 0, 0, 0)
+	self.Bind(wx.EVT_BUTTON, lambda evt: self.OnDownArrow(evt, self.main_frame), down_button)
+
 	info_image = FireGroup.MakeIcon(self,"info_button.png", 21, 21)
 	info_button = wx.BitmapButton(self, -1, bitmap = info_image, size = (info_image.GetWidth()+9, info_image.GetHeight()+9))
 	self.Bind(wx.EVT_BUTTON, self.OnInfo, info_button)
 	self.main_hor_box.Add(info_button, 0, 0, 0)
+
 
 	delete_image = FireGroup.MakeIcon(self,"delete_button.png", 19, 19)
 	delete_button = wx.BitmapButton(self, -1, bitmap = delete_image, size=(add_image.GetWidth(),add_image.GetHeight()))
@@ -358,6 +427,47 @@ class FireGroup(wx.Panel):
 
 	self.ver_box.Add(self.main_hor_box, 0, 0, 0)
 	self.SetSizer(self.ver_box)
+
+    def OnUpArrow(self, evt, main_frame):
+        this_index = main_frame.FireGroup_list.index(self)
+	if (this_index != 0) & (len(main_frame.FireGroup_list) != 1):
+	    main_frame.FireGroup_list[this_index], main_frame.FireGroup_list[this_index - 1] = main_frame.FireGroup_list[this_index - 1], main_frame.FireGroup_list[this_index]
+	    self.main_frame.Save()
+
+	    for group in main_frame.FireGroup_list:
+		for sub_group in group.SubFireGroup_list:
+		    sub_group.Destroy()
+	        group.Destroy()
+
+	    del main_frame.FireGroup_list[:]	
+
+	    main_frame.channel_list = main_frame.config['ARDUINOS'][main_frame.arduino_model]['channels']
+	    main_frame.occupied_channels = []
+	    main_frame.occupied_channels = map(str,main_frame.occupied_channels)
+	    main_frame.channel_list = map(str, main_frame.channel_list)
+	
+	    main_frame.Load()
+	
+    def OnDownArrow(self, evt, main_frame):
+
+	this_index = main_frame.FireGroup_list.index(self)
+	if (this_index != len(main_frame.FireGroup_list)-1) & (len(main_frame.FireGroup_list) != 1):
+	    main_frame.FireGroup_list[this_index], main_frame.FireGroup_list[this_index + 1] = main_frame.FireGroup_list[this_index + 1], main_frame.FireGroup_list[this_index]
+	    main_frame.Save()
+
+	    for group in main_frame.FireGroup_list:
+		for sub_group in group.SubFireGroup_list:
+		    sub_group.Destroy()
+	        group.Destroy()
+
+	    del main_frame.FireGroup_list[:]	
+
+	    main_frame.channel_list = main_frame.config['ARDUINOS'][main_frame.arduino_model]['channels']
+	    main_frame.occupied_channels = []
+	    main_frame.occupied_channels = map(str,main_frame.occupied_channels)
+	    main_frame.channel_list = map(str, main_frame.channel_list)
+	
+	    main_frame.Load()
 
     def OnChangeName(self, evt):
 	new_name = evt.GetEventObject().GetValue()
