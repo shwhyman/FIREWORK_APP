@@ -90,6 +90,7 @@ class Frame(wx.Frame):
 	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)	    
 	    self.FireGroup_list.append(new_FireGroup)
 	    new_FireGroup.ChangeName(str(self.config["FIREGROUPS"][groups_names]["name"]))
+	    new_FireGroup.blurb = self.config["FIREGROUPS"][groups_names]["blurb"]
 
 	    if self.config["FIREGROUPS"][groups_names]["channel"] != '':
 
@@ -146,7 +147,7 @@ class Frame(wx.Frame):
 	password_frame.MakeModal(True)
 
 
-    def OnSave(self, event, text):
+    def Save(self, text):
 	text_value = text.GetValue()	
 	self.config["text"] = str(text_value)	
 	with open(self.config_file_name, "w") as u_cfg:
@@ -159,6 +160,7 @@ class Frame(wx.Frame):
 	for group in self.FireGroup_list:
 	    name = group.group_name
 	    channel = group.current_channel
+	    blurb = group.blurb
 	    
 	    sub_dict = OrderedDict()	
 
@@ -167,21 +169,20 @@ class Frame(wx.Frame):
 	        sub_channel = sub_groups.current_channel
 		sub_dict[str(sub_name)] = str(sub_channel)
 
-	    main_ordered_dict.update({str(name):{'channel': str(channel), 'name': str(name), 'sub_groups': sub_dict}})
+	    main_ordered_dict.update({str(name):{'channel': str(channel), 'name': str(name), 'blurb': str(blurb), 'sub_groups': sub_dict}})
 	    
-
-	    #self.config["FIREGROUPS"][str(name)] = append_dict
 	self.config["FIREGROUPS"] = main_ordered_dict
 
 	with open(self.config_file_name, "w") as u_cfg:
 	    yaml.dump(self.config, u_cfg)
-	 
 
-    def Save(self, text):
-	text_value = text.GetValue()	
-	self.config["text"] = text_value	
-	with open(self.config_file_name, "w") as u_cfg:
-	    yaml.dump(self.config, u_cfg)
+        
+	dlg = wx.MessageDialog(self, "The changes you have made have been saved.", "Saved Changes", wx.OK|wx.ICON_INFORMATION)
+        result = dlg.ShowModal()
+        dlg.Destroy() 
+
+    def OnSave(self, event, text):
+	self.Save(text)
 
 
     def OnClose(self, event, text):
@@ -360,7 +361,7 @@ class FireGroup(wx.Panel):
 
     def OnChangeName(self, evt):
 	new_name = evt.GetEventObject().GetValue()
-	self.ChangeName(new_name)
+	self.group_name = new_name
 
     def ChangeName(self, new_name):
 	self.group_name = new_name
@@ -499,7 +500,7 @@ class SubFireGroup(wx.Panel):
 
     def OnChangeName(self, evt):
 	new_name = evt.GetEventObject().GetValue()
-	self.ChangeName(new_name)
+	self.subgroup_name = new_name
 
     def ChangeName(self, new_name):
 	self.subgroup_name = new_name
