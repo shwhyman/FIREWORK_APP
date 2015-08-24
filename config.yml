@@ -8,10 +8,10 @@ ARDUINOS:
     channels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     name: UNO
 FIREGROUPS: !!python/object/apply:collections.OrderedDict
-- - - _1
+- - - Test_1
     - blurb: ''
       channel: ''
-      name: ''
+      name: Test
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
   - - _2
@@ -27,24 +27,6 @@ FIREGROUPS: !!python/object/apply:collections.OrderedDict
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
   - - _4
-    - blurb: ''
-      channel: ''
-      name: ''
-      sub_groups: !!python/object/apply:collections.OrderedDict
-      - []
-  - - _5
-    - blurb: ''
-      channel: ''
-      name: ''
-      sub_groups: !!python/object/apply:collections.OrderedDict
-      - []
-  - - _6
-    - blurb: ''
-      channel: ''
-      name: ''
-      sub_groups: !!python/object/apply:collections.OrderedDict
-      - []
-  - - _7
     - blurb: ''
       channel: ''
       name: ''
