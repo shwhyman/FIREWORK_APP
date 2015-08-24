@@ -86,6 +86,9 @@ class Frame(wx.Frame):
 
 	#self.panel = wx.Panel(self)
 	self.panel = scrolled.ScrolledPanel(self, -1)
+
+	self.panel.Unbind(wx.EVT_SET_FOCUS)
+	self.panel.Unbind(wx.EVT_KILL_FOCUS)
 	
 	self.box = wx.BoxSizer(wx.VERTICAL)
 	self.box.AddSpacer(20)
@@ -97,7 +100,7 @@ class Frame(wx.Frame):
 	self.Load()
 
 	self.panel.Layout()
-	self.panel.SetupScrolling() #HERE
+	self.panel.SetupScrolling(scrollToTop=False) #HERE
 
 	self.somethings_changed = False
 
@@ -154,7 +157,7 @@ class Frame(wx.Frame):
 	    #self.panel.SetSizerAndFit(self.box)  important
    
 	self.panel.SetSizer(self.box) 
-	self.panel.SetupScrolling()   #New
+	self.panel.SetupScrolling(scrollToTop=False)   #New
 
     def OnChooseArduino(self, event, name, other_name):
 	self.config['ARDUINOS'][name]['active'] = True	
@@ -243,8 +246,9 @@ class Frame(wx.Frame):
 	    #self.panel.SetSizerAndFit(self.box)   #important
 
 	    self.FireGroup_list.append(new_FireGroup)	
-	    self.panel.SetupScrolling()
-
+	    self.panel.SetupScrolling(scrollToTop=False)
+	    
+ 
 	    self.somethings_changed = True
 
 
@@ -345,6 +349,7 @@ class FireGroup(wx.Panel):
 
     def __init__(self, main_frame, parent, destination, id):
 	wx.Panel.__init__(self, parent, id, size = (400,-1), style=wx.SUNKEN_BORDER)
+
 
 	self.SetBackgroundColour('#d3d3d3')
         #self.SetBackgroundColour('#D6ADC2')
@@ -540,7 +545,7 @@ class FireGroup(wx.Panel):
 	
 	    self.Destroy()
 	    #parent.SetSizerAndFit(destination)  #important
-	    main_frame.panel.SetupScrolling()    #new
+	    main_frame.panel.SetupScrolling(scrollToTop=False)    #new
 	    
 
     def OnAdd(self, evt, parent, destination):
@@ -555,7 +560,7 @@ class FireGroup(wx.Panel):
 	    #self.parent.SetSizerAndFit(self.destination) #old
 	    self.SubFireGroup_list.append(new_sub_group)
 	    self.main_frame.somethings_changed = True
-	    self.main_frame.panel.SetupScrolling() #new
+	    self.main_frame.panel.SetupScrolling(scrollToTop=False) #new
 	
 
     def OnInfo(self, evt):
@@ -676,7 +681,7 @@ class SubFireGroup(wx.Panel):
 	    self.Destroy()
 	    parent.SetSizerAndFit(destination)
 	    #parent.parent.SetSizerAndFit(parent.destination) #old
-	    parent.main_frame.panel.SetupScrolling()
+	    parent.main_frame.panel.SetupScrolling(scrollToTop=False)
 	    
 	
 	
