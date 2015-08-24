@@ -1,13 +1,15 @@
 #!/usr/bin/python2
 
 import wx, yaml
+import wx.lib.scrolledpanel as scrolled
 from passlib.hash import sha256_crypt
+import collections
 from collections import OrderedDict
 
 class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
 
-        wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(600,400))
+        wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(455,200))
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 	self.somethings_changed = False
@@ -36,10 +38,15 @@ class Frame(wx.Frame):
         #---FILE MENU---#
 
 	file_menu = wx.Menu()
+	m_new = file_menu.Append(wx.ID_ANY, "N&ew", "New")
+	m_open = file_menu.Append(wx.ID_ANY, "O&pen...", "Open")
+	file_menu.AppendSeparator()
+	m_save = file_menu.Append(wx.ID_SAVE,"S&ave\tAlt-S", "Save")
+	m_save_as = file_menu.Append(wx.ID_ANY, "S&ave As...\tCtrl-Shft-S", "Save As")
+	self.Bind(wx.EVT_MENU, self.OnSave, m_save)
+	file_menu.AppendSeparator()
 	m_exit = file_menu.Append(wx.ID_EXIT, "E&xit\tAlt-X", "Exit")
 	self.Bind(wx.EVT_MENU, self.OnClose, m_exit)
-	m_save = file_menu.Append(wx.ID_SAVE,"S&ave\tAlt-S", "Save")
-	self.Bind(wx.EVT_MENU, self.OnSave, m_save)
 	menuBar.Append(file_menu, "File")
 
 
@@ -75,13 +82,13 @@ class Frame(wx.Frame):
 
 	self.SetMenuBar(menuBar)
 
-	#---TEMPORARY TEXT BOX---#
+	
 
-	self.panel = wx.Panel(self)
+	#self.panel = wx.Panel(self)
+	self.panel = scrolled.ScrolledPanel(self, -1)
+	
 	self.box = wx.BoxSizer(wx.VERTICAL)
-
-	self.edit_text = wx.TextCtrl(self.panel, -1, self.config["text"], size=(300,90), pos=(10,10), style = wx.TE_MULTILINE)
-	self.box.Add(self.edit_text, 0, wx.ALL)
+	self.box.AddSpacer(20)
 
 	self.FireGroup_list = []
 
@@ -90,7 +97,10 @@ class Frame(wx.Frame):
 	self.Load()
 
 	self.panel.Layout()
+	self.panel.SetupScrolling() #HERE
+
 	self.somethings_changed = False
+
 
     def Load(self):
 
@@ -112,10 +122,11 @@ class Frame(wx.Frame):
 		new_sub_group = SubFireGroup(new_FireGroup, new_FireGroup.ver_box, wx.ALL)
 		new_FireGroup.ver_box.Add(new_sub_group, 0, 0, 0)
 		new_FireGroup.SetSizerAndFit(new_FireGroup.ver_box)
+	    
 	      
 	        new_FireGroup.SubFireGroup_list.append(new_sub_group)
 
-		new_sub_group.ChangeName(str(sub_name))
+		new_sub_group.ChangeName(str(sub_name[0]))
 
 	        if sub_channel != '':	
 		    new_sub_group.ChangeChannel(str(sub_channel))
@@ -138,11 +149,12 @@ class Frame(wx.Frame):
 		    for sub_channels in self.channel_list:
 		        sub_objects.channel_combo_box.Append(sub_channels)
 		
-	    self.box.Add(new_FireGroup, 0, 0, 0)
-	    self.panel.SetSizerAndFit(self.box)
+	    self.box.Add(new_FireGroup, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=20)
+	  
+	    #self.panel.SetSizerAndFit(self.box)  important
    
-	self.panel.SetSizer(self.box)
-
+	self.panel.SetSizer(self.box) 
+	self.panel.SetupScrolling()   #New
 
     def OnChooseArduino(self, event, name, other_name):
 	self.config['ARDUINOS'][name]['active'] = True	
@@ -159,30 +171,35 @@ class Frame(wx.Frame):
 
     def Save(self):
 	
+
 	self.somethings_changed = False
-	
-	text_value = self.edit_text.GetValue()	
-	self.config["text"] = str(text_value)	
-	with open(self.config_file_name, "w") as u_cfg:
-	    yaml.dump(self.config, u_cfg)
 
 	self.config["FIREGROUPS"].clear()	
 	
 	main_ordered_dict = OrderedDict()
+
+	item_number = 0
 
 	for group in self.FireGroup_list:
 	    name = group.group_name
 	    channel = group.current_channel
 	    blurb = group.blurb
 	    
-	    sub_dict = OrderedDict()	
+	    sub_dict = OrderedDict()		 
 
 	    for sub_groups in group.SubFireGroup_list:
+
+		item_number += 1	       
+
 		sub_name = sub_groups.subgroup_name
 	        sub_channel = sub_groups.current_channel
-		sub_dict[str(sub_name)] = str(sub_channel)
+		
+		sub_dict.update({(str(sub_name), item_number) : str(sub_channel)})
 
-	    main_ordered_dict.update({str(name):{'channel': str(channel), 'name': str(name), 'blurb': str(blurb), 'sub_groups': sub_dict}})
+
+	    item_number += 1
+
+	    main_ordered_dict.update({str(name)+'_'+str(item_number):{'channel': str(channel), 'name': str(name), 'blurb': str(blurb), 'sub_groups': sub_dict}})
 	    
 	self.config["FIREGROUPS"] = main_ordered_dict
 
@@ -222,12 +239,11 @@ class Frame(wx.Frame):
 	    dlg.Destroy()
 	else:
 	    new_FireGroup = FireGroup(self, self.panel, self.box, wx.ALL)
-	    self.box.Add(new_FireGroup, 0, 0, 0)
-	    self.panel.SetSizerAndFit(self.box)
+	    self.box.Add(new_FireGroup, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=20)
+	    #self.panel.SetSizerAndFit(self.box)   #important
 
 	    self.FireGroup_list.append(new_FireGroup)	
-
-	    self.panel.Layout()
+	    self.panel.SetupScrolling()
 
 	    self.somethings_changed = True
 
@@ -331,7 +347,7 @@ class FireGroup(wx.Panel):
 	wx.Panel.__init__(self, parent, id, size = (400,-1), style=wx.SUNKEN_BORDER)
 
 	self.SetBackgroundColour('#d3d3d3')
-
+        #self.SetBackgroundColour('#D6ADC2')
 	self.main_frame = main_frame
 	self.parent = parent
 	self.destination = destination
@@ -406,6 +422,7 @@ class FireGroup(wx.Panel):
 	    main_frame.channel_list = map(str, main_frame.channel_list)
 	
 	    main_frame.Load()
+	    #main_frame.panel.Layout()
 	
     def OnDownArrow(self, evt, main_frame):
 
@@ -518,8 +535,12 @@ class FireGroup(wx.Panel):
 	     
 
 	    self.main_frame.FireGroup_list.remove(self)
+
+	    main_frame = self.main_frame
+	
 	    self.Destroy()
-	    parent.SetSizerAndFit(destination) 
+	    #parent.SetSizerAndFit(destination)  #important
+	    main_frame.panel.SetupScrolling()    #new
 	    
 
     def OnAdd(self, evt, parent, destination):
@@ -531,15 +552,17 @@ class FireGroup(wx.Panel):
 	    new_sub_group = SubFireGroup(parent, destination, wx.ALL)
 	    destination.Add(new_sub_group, 0, 0, 0)
 	    self.SetSizerAndFit(destination)
-	    self.parent.SetSizerAndFit(self.destination)
+	    #self.parent.SetSizerAndFit(self.destination) #old
 	    self.SubFireGroup_list.append(new_sub_group)
 	    self.main_frame.somethings_changed = True
+	    self.main_frame.panel.SetupScrolling() #new
 	
 
     def OnInfo(self, evt):
 	info_frame = TextFrame(self, self.blurb)
 	info_frame.Show(True)
 	info_frame.MakeModal(True)
+	self.main_frame.somethings_changed = True
 
 
 class SubFireGroup(wx.Panel):
@@ -652,7 +675,8 @@ class SubFireGroup(wx.Panel):
 	    self.parent.SubFireGroup_list.remove(self)
 	    self.Destroy()
 	    parent.SetSizerAndFit(destination)
-	    parent.parent.SetSizerAndFit(parent.destination)
+	    #parent.parent.SetSizerAndFit(parent.destination) #old
+	    parent.main_frame.panel.SetupScrolling()
 	    
 	
 	
