@@ -8,29 +8,46 @@ ARDUINOS:
     channels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     name: UNO
 FIREGROUPS: !!python/object/apply:collections.OrderedDict
-- - - B1
+- - - _1
     - blurb: ''
-      channel: '4'
-      name: B1
+      channel: ''
+      name: ''
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
-  - - A1
+  - - _2
     - blurb: ''
-      channel: '1'
-      name: A1
-      sub_groups: !!python/object/apply:collections.OrderedDict
-      - - [A2, '2']
-        - [A3, '3']
-  - - C1
-    - blurb: ''
-      channel: '5'
-      name: C1
+      channel: ''
+      name: ''
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
-  - - D1
+  - - _3
     - blurb: ''
-      channel: '6'
-      name: D1
+      channel: ''
+      name: ''
+      sub_groups: !!python/object/apply:collections.OrderedDict
+      - []
+  - - _4
+    - blurb: ''
+      channel: ''
+      name: ''
+      sub_groups: !!python/object/apply:collections.OrderedDict
+      - []
+  - - _5
+    - blurb: ''
+      channel: ''
+      name: ''
+      sub_groups: !!python/object/apply:collections.OrderedDict
+      - []
+  - - _6
+    - blurb: ''
+      channel: ''
+      name: ''
+      sub_groups: !!python/object/apply:collections.OrderedDict
+      - []
+  - - _7
+    - blurb: ''
+      channel: ''
+      name: ''
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
 password: $5$rounds=535000$Uq75eElEg79tZfqq$e/8G1ZEuVZJYWv2Hngoby7Bg4afCqskr.QYPfXQeRS.
