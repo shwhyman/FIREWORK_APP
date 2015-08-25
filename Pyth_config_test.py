@@ -9,7 +9,7 @@ from collections import OrderedDict
 class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
 
-        wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(455,200))
+        wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(455,400))
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
 	self.somethings_changed = False
@@ -80,11 +80,19 @@ class Frame(wx.Frame):
 
 	menuBar.Append(settings_menu, "Settings")
 
+	#---FIRE MENU---#
+
+	fire_menu = wx.Menu()
+
+	menuBar.Append(fire_menu, "Fire")
+	m_preview = fire_menu.Append(-1, "Preview Firing Sequence")
+	m_begin_sequence = fire_menu.Append(-1, "Begin Firing Sequence")
+	self.Bind(wx.EVT_MENU, self.OnFire, m_begin_sequence)
+
 	self.SetMenuBar(menuBar)
 
-	
+	#--------------------#
 
-	#self.panel = wx.Panel(self)
 	self.panel = scrolled.ScrolledPanel(self, -1)
 
 	self.panel.Unbind(wx.EVT_SET_FOCUS)
@@ -104,6 +112,31 @@ class Frame(wx.Frame):
 
 	self.somethings_changed = False
 
+    def OnFire(self, evt):
+
+	dlg = wx.PasswordEntryDialog(self, "Please confirm your password to arm the firing system:", "Password Verification Required!")
+	result = dlg.ShowModal()
+	password_attempt = dlg.GetValue()
+	outcome = sha256_crypt.verify(password_attempt, self.config["password"])
+	dlg.Destroy()
+	if result != wx.ID_CANCEL:
+	    if outcome == False:
+	        error_dlg = wx.MessageDialog(self, "The password you entered is incorrect!", "Incorrect Password!", wx.OK | wx.ICON_WARNING)
+	        error_dlg.ShowModal()
+	        error_dlg.Destroy()
+	    elif outcome == True:
+	        caution_dlg = wx.MessageDialog(self, "The firing system is now live. Once the sequence begins, it may only be aborted or suspended with password confirmation. Do you wish to proceed?", "Firing System Armed", wx.YES_NO | wx.ICON_INFORMATION)
+	        result = caution_dlg.ShowModal()
+	        caution_dlg.Destroy()
+	        if result == wx.ID_NO:
+		    no_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)
+	            no_dlg.ShowModal()
+	        elif result == wx.ID_YES:
+		    new_fire_frame = FireWindow(self, self.config, self.config_file_name)
+	            #new_fire_frame.Show()
+	            #new_fire_frame.Maximize(True)
+		    new_fire_frame.MakeModal(True)
+		
 
     def Load(self):
 
@@ -252,6 +285,59 @@ class Frame(wx.Frame):
 	    self.somethings_changed = True
 
 
+class FireWindow(wx.Frame):
+
+    def __init__(self, parent, config, config_file_name):
+	wx.Frame.__init__(self, parent, title = "Fire Sequence")
+
+
+	self.ShowFullScreen(True)
+	#self.Show()
+	self.config = config
+
+	
+
+
+	self.panel = wx.Panel(self, wx.ID_ANY)
+	self.panel.Bind(wx.EVT_KEY_DOWN, self.OnKey)
+	self.panel.Bind(wx.EVT_KEY_UP, self.OnKey)
+		
+
+	self.box = wx.BoxSizer(wx.VERTICAL)
+	self.box.AddSpacer(20)
+
+
+	self.panel.SetSizer(self.box)
+        self.panel.SetFocus()
+
+	self.panel.Layout()
+	
+
+    def OnKey(self, evt):
+
+	key_code = evt.GetKeyCode()
+	if key_code == wx.WXK_ESCAPE:	
+
+	    dlg = wx.PasswordEntryDialog(self, "Please confirm your password to abort the firing system:", "Password Verification Required!")
+	    result = dlg.ShowModal()
+	    password_attempt = dlg.GetValue()
+	    outcome = sha256_crypt.verify(password_attempt, self.config["password"])
+	    dlg.Destroy()
+	    if result != wx.ID_CANCEL:
+	        if outcome == False:
+	            error_dlg = wx.MessageDialog(self, "The password you entered is incorrect!", "Incorrect Password!", wx.OK | wx.ICON_WARNING)
+	            error_dlg.ShowModal()
+	            error_dlg.Destroy()
+	        elif outcome == True:
+	            caution_dlg = wx.MessageDialog(self, "Are you sure you wish to abort the firing sequence?", "Abort Firing Sequence", wx.YES_NO | wx.ICON_INFORMATION)
+	            result = caution_dlg.ShowModal()
+	            caution_dlg.Destroy()
+	            if result == wx.ID_YES:
+		        yes_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)
+	                self.MakeModal(False)
+		        self.Destroy()
+	                yes_dlg.ShowModal() 
+	
 class PasswordSettings(wx.Frame):
     
     def __init__(self, config, config_file_name):
