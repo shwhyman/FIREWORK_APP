@@ -107,6 +107,9 @@ class Frame(wx.Frame):
 
 	self.Load()
 
+	#test_window = FireWindow(self, self.config, self.config_file_name)
+
+
 	self.panel.Layout()
 	self.panel.SetupScrolling(scrollToTop=False) #HERE
 
@@ -125,7 +128,7 @@ class Frame(wx.Frame):
 	        error_dlg.ShowModal()
 	        error_dlg.Destroy()
 	    elif outcome == True:
-	        caution_dlg = wx.MessageDialog(self, "The firing system is now live. Once the sequence begins, it may only be aborted or suspended with password confirmation. Do you wish to proceed?", "Firing System Armed", wx.YES_NO | wx.ICON_INFORMATION)
+	        caution_dlg = wx.MessageDialog(self, "The firing system is now live. Once the sequence begins, it may only be aborted with password confirmation. Do you wish to proceed?", "Firing System Armed", wx.YES_NO | wx.ICON_INFORMATION)
 	        result = caution_dlg.ShowModal()
 	        caution_dlg.Destroy()
 	        if result == wx.ID_NO:
@@ -284,6 +287,45 @@ class Frame(wx.Frame):
  
 	    self.somethings_changed = True
 
+class FireGroupDisplay(wx.Panel):
+
+    def __init__(self, parent, id, fire_group):
+	wx.Panel.__init__(self, parent, id, style=wx.SUNKEN_BORDER)
+
+	self.SetBackgroundColour('#00E500')
+	self.parent = parent
+
+	self.main_grid_box = wx.GridSizer(1, 0, 0, 100)    #divide into two portions
+
+	self.sub_grid_box = wx.GridSizer(len(fire_group.SubFireGroup_list)+1, 2, 5, 100)
+
+	font = wx.Font(18, wx.DEFAULT, wx.NORMAL, wx.BOLD)
+
+	group_name_field = wx.StaticText(self, label=fire_group.group_name)
+	group_name_field.SetFont(font)
+	group_channel_field = wx.StaticText(self, label=fire_group.current_channel)
+	group_channel_field.SetFont(font)
+
+	self.sub_grid_box.AddMany([(group_name_field,0, wx.EXPAND), (group_channel_field, 0, wx.EXPAND)])
+
+	for sub_groups in fire_group.SubFireGroup_list:
+	    sub_name_field = wx.StaticText(self, label=sub_groups.subgroup_name)
+	    sub_channel_field = wx.StaticText(self, label=sub_groups.current_channel)
+	    sub_name_field.SetFont(font)
+	    sub_channel_field.SetFont(font)
+	    self.sub_grid_box.AddMany([(sub_name_field,0, wx.EXPAND), (sub_channel_field, 0, wx.EXPAND)])
+
+	self.main_grid_box.Add(self.sub_grid_box, proportion=0, flag=wx.EXPAND |wx.Left | wx.RIGHT)
+
+	self.status = wx.StaticText(self,label='STBY')
+	self.status.SetFont(font)
+
+	self.main_grid_box.Add(self.status,2,wx.EXPAND)
+
+	self.SetSizerAndFit(self.main_grid_box)
+
+
+	
 
 class FireWindow(wx.Frame):
 
@@ -292,25 +334,39 @@ class FireWindow(wx.Frame):
 
 
 	self.ShowFullScreen(True)
-	#self.Show()
 	self.config = config
 
-	
 
+	#self.panel = scrolled.ScrolledPanel(self, -1)
+	self.panel=wx.Panel(self)
+	self.panel.Unbind(wx.EVT_SET_FOCUS)
+	self.panel.Unbind(wx.EVT_KILL_FOCUS)
 
-	self.panel = wx.Panel(self, wx.ID_ANY)
 	self.panel.Bind(wx.EVT_KEY_DOWN, self.OnKey)
-	self.panel.Bind(wx.EVT_KEY_UP, self.OnKey)
+	#self.panel.Bind(wx.EVT_KEY_UP, self.OnKey)
 		
 
 	self.box = wx.BoxSizer(wx.VERTICAL)
 	self.box.AddSpacer(20)
+
+	self.FireGroups = []
+	self.counter = 0
+	
+	#---SETUP FIRE LIST---#
+
+	for groups in parent.FireGroup_list:
+
+	    new_display = FireGroupDisplay(self, -1, groups)
+	    self.box.Add(new_display, border=20)
+	    self.FireGroups.append(new_display)
 
 
 	self.panel.SetSizer(self.box)
         self.panel.SetFocus()
 
 	self.panel.Layout()
+
+	#self.panel.SetupScrolling(scrollToTop=False)
 	
 
     def OnKey(self, evt):
@@ -333,10 +389,34 @@ class FireWindow(wx.Frame):
 	            result = caution_dlg.ShowModal()
 	            caution_dlg.Destroy()
 	            if result == wx.ID_YES:
-		        yes_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)
+		        yes_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)	
+			yes_dlg.ShowModal()
 	                self.MakeModal(False)
 		        self.Destroy()
-	                yes_dlg.ShowModal() 
+	
+	elif key_code == wx.WXK_RETURN:
+
+	    if self.counter == len(self.FireGroups):
+		self.FireGroups[self.counter - 1].SetBackgroundColour('#d3d3d3')
+		finish_dlg = wx.MessageDialog(self, "The firing sequence has finished, and will now exit.", "End Of Sequence", wx.OK | wx.ICON_INFORMATION)
+		finish_dlg.ShowModal()
+		self.MakeModal(False)
+		self.Destroy()
+		return
+ 
+	    if self.FireGroups[self.counter].status.GetLabel() == 'STBY':
+	        self.FireGroups[self.counter].status.SetLabel('ARMED')	
+	        self.FireGroups[self.counter].status.SetForegroundColour('#FF0000')
+		if self.counter != 0:
+		    self.FireGroups[self.counter - 1].SetBackgroundColour('#d3d3d3')
+	    elif self.FireGroups[self.counter].status.GetLabel() == 'ARMED':
+		self.FireGroups[self.counter].status.SetLabel('FIRED')
+	        self.FireGroups[self.counter].status.SetForegroundColour('#000000')
+		self.FireGroups[self.counter].SetBackgroundColour('#FF0000')
+	  	
+	        self.counter += 1 
+
+		             
 	
 class PasswordSettings(wx.Frame):
     
