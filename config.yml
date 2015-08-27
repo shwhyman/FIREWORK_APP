@@ -8,28 +8,31 @@ ARDUINOS:
     channels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
     name: UNO
 FIREGROUPS: !!python/object/apply:collections.OrderedDict
-- - - Test_1
+- - - Test_3
     - blurb: ''
-      channel: ''
+      channel: '1'
       name: Test
       sub_groups: !!python/object/apply:collections.OrderedDict
-      - []
-  - - _2
+      - - - !!python/tuple ['SubA ', 1]
+          - '2'
+        - - !!python/tuple [subB, 2]
+          - '3'
+  - - TestC_4
     - blurb: ''
-      channel: ''
-      name: ''
+      channel: '4'
+      name: TestC
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
-  - - _3
+  - - TestD_5
     - blurb: ''
-      channel: ''
-      name: ''
+      channel: '5'
+      name: TestD
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
-  - - _4
+  - - TestE_6
     - blurb: ''
-      channel: ''
-      name: ''
+      channel: '6'
+      name: TestE
       sub_groups: !!python/object/apply:collections.OrderedDict
       - []
 password: $5$rounds=535000$Uq75eElEg79tZfqq$e/8G1ZEuVZJYWv2Hngoby7Bg4afCqskr.QYPfXQeRS.
