@@ -5,7 +5,7 @@ import wx.lib.scrolledpanel as scrolled
 from passlib.hash import sha256_crypt
 import collections
 from collections import OrderedDict
-import serial
+import serial, glob, sys
 import time 
 import struct
 
@@ -13,9 +13,6 @@ class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
 
         wx.Frame.__init__(self, None, title=title, pos=(150,150), size=(455,400))
-
-	
-
 
         self.Bind(wx.EVT_CLOSE, self.OnClose)
 
@@ -124,28 +121,38 @@ class Frame(wx.Frame):
 
     def OnFire(self, evt):
 
-	dlg = wx.PasswordEntryDialog(self, "Please confirm your password to arm the firing system:", "Password Verification Required!")
-	result = dlg.ShowModal()
-	password_attempt = dlg.GetValue()
-	outcome = sha256_crypt.verify(password_attempt, self.config["password"])
-	dlg.Destroy()
-	if result != wx.ID_CANCEL:
-	    if outcome == False:
-	        error_dlg = wx.MessageDialog(self, "The password you entered is incorrect!", "Incorrect Password!", wx.OK | wx.ICON_WARNING)
-	        error_dlg.ShowModal()
-	        error_dlg.Destroy()
-	    elif outcome == True:
-	        caution_dlg = wx.MessageDialog(self, "The firing system is now live. Once the sequence begins, it may only be aborted with password confirmation. Do you wish to proceed?", "Firing System Armed", wx.YES_NO | wx.ICON_INFORMATION)
-	        result = caution_dlg.ShowModal()
-	        caution_dlg.Destroy()
-	        if result == wx.ID_NO:
-		    no_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)
-	            no_dlg.ShowModal()
-	        elif result == wx.ID_YES:
-		    new_fire_frame = FireWindow(self, self.config, self.config_file_name)
-	            #new_fire_frame.Show()
-	            #new_fire_frame.Maximize(True)
-		    new_fire_frame.MakeModal(True)
+	ports_in_use = self.serial_ports()
+
+	if not ports_in_use:
+	    no_ard_dlg = wx.MessageDialog(self, "There is no Arduino connected! Please connect a serial device to begin the firing sequence.", "Serial Device Not Found!", wx.OK | wx.ICON_WARNING)
+	    no_ard_dlg.ShowModal()
+	    no_ard_dlg.Destroy()
+	else:
+	    if len(ports_in_use) > 1:
+		many_ard_dlg = wx.MessageDialog(self, "More than one serial device was found!", "Serial Device Error!", wx.OK | wx.ICON_WARNING)
+	        many_ard_dlg.ShowModal()
+	        many_ard_dlg.Destroy()
+	    else:
+	        dlg = wx.PasswordEntryDialog(self, "Please confirm your password to arm the firing system:", "Password Verification Required!")
+	        result = dlg.ShowModal()
+	        password_attempt = dlg.GetValue()
+	        outcome = sha256_crypt.verify(password_attempt, self.config["password"])
+	        dlg.Destroy()
+	        if result != wx.ID_CANCEL:
+	            if outcome == False:
+	                error_dlg = wx.MessageDialog(self, "The password you entered is incorrect!", "Incorrect Password!", wx.OK | wx.ICON_WARNING)
+	                error_dlg.ShowModal()
+	                error_dlg.Destroy()
+	            elif outcome == True:
+	                caution_dlg = wx.MessageDialog(self, "The firing system is now live. Once the sequence begins, it may only be aborted with password confirmation. Do you wish to proceed?", "Firing System Armed", wx.YES_NO | wx.ICON_INFORMATION)
+	                result = caution_dlg.ShowModal()
+	                caution_dlg.Destroy()
+	                if result == wx.ID_NO:
+		            no_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)
+	                    no_dlg.ShowModal()
+	                elif result == wx.ID_YES:
+		            new_fire_frame = FireWindow(self, self.config, self.config_file_name, ports_in_use)
+		            new_fire_frame.MakeModal(True)
 		
 
     def Load(self):
@@ -217,7 +224,6 @@ class Frame(wx.Frame):
 
     def Save(self):
 	
-
 	self.somethings_changed = False
 
 	self.config["FIREGROUPS"].clear()	
@@ -297,6 +303,31 @@ class Frame(wx.Frame):
  
 	    self.somethings_changed = True
 
+    def serial_ports(self):
+
+        if sys.platform.startswith('win'):
+            ports = ['COM%s' % (i + 1) for i in range(256)]
+	
+        elif sys.platform.startswith('linux') or sys.platform.startswith('cygwin'):
+        # this excludes your current terminal "/dev/tty"
+            ports = glob.glob('/dev/tty[A-Za-z]*')
+        elif sys.platform.startswith('darwin'):
+            ports = glob.glob('/dev/tty.*')
+        else:
+            raise EnvironmentError('Unsupported platform')
+	
+        result = []
+        
+	for port in ports:
+            try:
+                s = serial.Serial(port)
+                s.close()
+                result.append(port)
+            except (OSError, serial.SerialException):
+                pass
+
+        return result
+
 class FireGroupDisplay(wx.Panel):
 
     def __init__(self, parent, id, fire_group):
@@ -339,12 +370,13 @@ class FireGroupDisplay(wx.Panel):
 
 class FireWindow(wx.Frame):
 
-    def __init__(self, parent, config, config_file_name):
+    def __init__(self, parent, config, config_file_name, ports_in_use):
 	wx.Frame.__init__(self, parent, title = "Fire Sequence")
 
 	self.parent = parent
 
-	self.ser = serial.Serial('/dev/ttyACM0', 9600)	
+
+	self.ser = serial.Serial(ports_in_use[0], 9600)	
 	
 	time.sleep(2)
 	      
@@ -409,6 +441,7 @@ class FireWindow(wx.Frame):
 	        result = caution_dlg.ShowModal()
 	        caution_dlg.Destroy()
 	        if result == wx.ID_YES:
+		    self.ser.close()
 		    yes_dlg = wx.MessageDialog(self, "The firing sequence was successfully aborted.", "Sequence Aborted", wx.OK | wx.ICON_INFORMATION)	
 		    yes_dlg.ShowModal()
 	            self.MakeModal(False)
@@ -421,6 +454,7 @@ class FireWindow(wx.Frame):
 	    finish_dlg = wx.MessageDialog(self, "The firing sequence has finished, and will now exit.", "End Of Sequence", wx.OK | wx.ICON_INFORMATION)
 	    finish_dlg.ShowModal()
 	    self.MakeModal(False)
+	    self.ser.close()
 	    self.Destroy()
 	    return
  
@@ -446,7 +480,6 @@ class FireWindow(wx.Frame):
 		send_string = send_string + channel_list[i]
 
 	   		
-
 	    self.ser.write(send_string.encode("utf-8")) 
 
 	    self.FireGroups[self.counter].status.SetForegroundColour('#000000')
