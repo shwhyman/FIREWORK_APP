@@ -8,6 +8,7 @@ from collections import OrderedDict
 import serial, glob, sys
 import time 
 import struct
+import wx.lib.agw.pybusyinfo as PBI
 
 class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
@@ -464,7 +465,6 @@ class FireWindow(wx.Frame):
 	    if self.counter != 0:
 		self.FireGroups[self.counter - 1].SetBackgroundColour('#d3d3d3')
 	elif self.FireGroups[self.counter].status.GetLabel() == 'ARMED':
-	    self.FireGroups[self.counter].status.SetLabel('FIRED')
 
 	    channel_list = []
 
@@ -479,16 +479,30 @@ class FireWindow(wx.Frame):
 		    send_string = send_string + ','
 		send_string = send_string + channel_list[i]
 
-	   		
-	    self.ser.write(send_string.encode("utf-8")) 
+	    try:		
+	        self.ser.write(send_string.encode("utf-8"))
 
-	    self.FireGroups[self.counter].status.SetForegroundColour('#000000')
-	    self.FireGroups[self.counter].SetBackgroundColour('#FF0000')
+	        self.FireGroups[self.counter].status.SetForegroundColour('#000000')
+	        self.FireGroups[self.counter].SetBackgroundColour('#FF0000')
+	        self.FireGroups[self.counter].status.SetLabel('FIRED')
 	  	
-	    self.counter += 1 
+	        self.counter += 1
+		
+	    except serial.serialutil.SerialException:
+	 	
+		msgbox = wx.MessageBox('There is no serial device connected! Please connect a device to continue.', 
+                       'Serial Error!', wx.ICON_WARNING) 
+		     
+	        ports = []
 
-		             
-	
+		while len(ports) < 1:
+	            
+		    ports = Frame.serial_ports(self.parent)
+		    
+	            if len(ports) == 1:
+                        self.ser = serial.Serial(ports[0], 9600)
+		 	
+				             	
 class PasswordSettings(wx.Frame):
     
     def __init__(self, config, config_file_name):
