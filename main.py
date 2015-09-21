@@ -8,7 +8,6 @@ from collections import OrderedDict
 import serial, glob, sys
 import time 
 import struct
-import wx.lib.agw.pybusyinfo as PBI
 
 class Frame(wx.Frame):
     def __init__(self, title, config_file_name="config.yml"):
@@ -364,7 +363,10 @@ class FireGroupDisplay(wx.Panel):
 
 	self.main_grid_box.Add(self.status,1,wx.EXPAND)
 
-	self.SetSizerAndFit(self.main_grid_box)
+	self.SetSizer(self.main_grid_box)
+	
+
+	#self.parent.panel.SetupScrolling()
 
 
 	
@@ -376,18 +378,17 @@ class FireWindow(wx.Frame):
 
 	self.parent = parent
 
-
 	self.ser = serial.Serial(ports_in_use[0], 9600)	
 	
 	time.sleep(2)
 	      
-
 	self.ShowFullScreen(True)
+	
 	self.config = config
 
-
-	#self.panel = scrolled.ScrolledPanel(self, -1)
-	self.panel=wx.Panel(self)
+	self.panel = scrolled.ScrolledPanel(self, -1)
+		
+	
 	self.panel.Unbind(wx.EVT_SET_FOCUS)
 	self.panel.Unbind(wx.EVT_KILL_FOCUS)
 
@@ -412,18 +413,16 @@ class FireWindow(wx.Frame):
 
 	for groups in parent.FireGroup_list:
 
-	    new_display = FireGroupDisplay(self, -1, groups)
-	    self.box.Add(new_display, proportion=1,  border=20, flag=wx.EXPAND | wx.LEFT | wx.RIGHT)
+	    new_display = FireGroupDisplay(self.panel, -1, groups)
+	    self.box.Add(new_display, proportion=0, flag=wx.EXPAND | wx.LEFT | wx.RIGHT, border=20)
 	    self.FireGroups.append(new_display)
 
-
-	self.panel.SetSizerAndFit(self.box)
-        self.panel.SetFocus()
-
-	self.panel.Layout()
-
-	#self.panel.SetupScrolling(scrollToTop=False)
 	
+	self.panel.SetSizer(self.box) 	
+	self.panel.Layout()
+	self.panel.SetupScrolling()
+
+	self.panel.SetFocus()
 
     def OnAbort(self, evt):
 	
